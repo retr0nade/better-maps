@@ -30,6 +30,17 @@ interface OptimizedRouteResponse {
   total_distance: number;
 }
 
+interface SavedRoute {
+  id: string;
+  name: string;
+  startLocation: Location;
+  stops: Location[];
+  distanceMatrix: number[][];
+  optimizedOrder: number[];
+  totalDistance: number;
+  savedAt: string;
+}
+
 export default function PlanRoutePage() {
   const [startLocation, setStartLocation] = useState<Location>({
     id: 'start',
@@ -44,6 +55,26 @@ export default function PlanRoutePage() {
   const [totalDistance, setTotalDistance] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>([]);
+  const [routeName, setRouteName] = useState<string>('');
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+
+  // Load saved routes from localStorage on component mount
+  useEffect(() => {
+    const saved = localStorage.getItem('savedRoutes');
+    if (saved) {
+      try {
+        setSavedRoutes(JSON.parse(saved));
+      } catch (error) {
+        console.error('Error loading saved routes:', error);
+      }
+    }
+  }, []);
+
+  // Save routes to localStorage whenever savedRoutes changes
+  useEffect(() => {
+    localStorage.setItem('savedRoutes', JSON.stringify(savedRoutes));
+  }, [savedRoutes]);
 
   const addStop = () => {
     const newStop: Location = {
@@ -187,10 +218,88 @@ export default function PlanRoutePage() {
     }
   };
 
+  const saveRoute = () => {
+    if (!routeName.trim()) {
+      setError('Please enter a route name');
+      return;
+    }
+
+    if (optimizedOrder.length === 0) {
+      setError('Please optimize the route first');
+      return;
+    }
+
+    const newRoute: SavedRoute = {
+      id: `route-${Date.now()}`,
+      name: routeName.trim(),
+      startLocation: { ...startLocation },
+      stops: [...stops],
+      distanceMatrix: [...distanceMatrix],
+      optimizedOrder: [...optimizedOrder],
+      totalDistance,
+      savedAt: new Date().toISOString()
+    };
+
+    setSavedRoutes(prev => [newRoute, ...prev]);
+    setRouteName('');
+    setShowSaveDialog(false);
+    setError('');
+  };
+
+  const loadRoute = (route: SavedRoute) => {
+    setStartLocation({ ...route.startLocation });
+    setStops([...route.stops]);
+    setDistanceMatrix([...route.distanceMatrix]);
+    setOptimizedOrder([...route.optimizedOrder]);
+    setTotalDistance(route.totalDistance);
+    setError('');
+  };
+
+  const deleteRoute = (routeId: string) => {
+    setSavedRoutes(prev => prev.filter(route => route.id !== routeId));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Route Planner</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Route Planner</h1>
+          
+          {/* Saved Routes Dropdown */}
+          <div className="flex items-center space-x-4">
+            {savedRoutes.length > 0 && (
+              <div className="relative">
+                <select
+                  onChange={(e) => {
+                    const route = savedRoutes.find(r => r.id === e.target.value);
+                    if (route) loadRoute(route);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  defaultValue=""
+                >
+                  <option value="">Load saved route...</option>
+                  {savedRoutes.map(route => (
+                    <option key={route.id} value={route.id}>
+                      {route.name} ({new Date(route.savedAt).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {optimizedOrder.length > 0 && (
+              <button
+                onClick={() => setShowSaveDialog(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span>Save Route</span>
+              </button>
+            )}
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Panel - Form */}
@@ -459,6 +568,82 @@ export default function PlanRoutePage() {
             )}
           </div>
         </div>
+        
+        {/* Save Route Dialog */}
+        {showSaveDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Save Route</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Route Name
+                  </label>
+                  <input
+                    type="text"
+                    value={routeName}
+                    onChange={(e) => setRouteName(e.target.value)}
+                    placeholder="e.g., Daily Delivery Route"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowSaveDialog(false);
+                      setRouteName('');
+                      setError('');
+                    }}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveRoute}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Saved Routes List */}
+        {savedRoutes.length > 0 && (
+          <div className="mt-8 bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">Saved Routes</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {savedRoutes.map(route => (
+                <div key={route.id} className="border border-gray-200 rounded-md p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-medium text-gray-900">{route.name}</h3>
+                    <button
+                      onClick={() => deleteRoute(route.id)}
+                      className="text-red-600 hover:text-red-800 text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {route.stops.length + 1} locations • {(route.totalDistance / 1000).toFixed(2)} km
+                  </p>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Saved: {new Date(route.savedAt).toLocaleDateString()}
+                  </p>
+                  <button
+                    onClick={() => loadRoute(route)}
+                    className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
+                  >
+                    Load Route
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
