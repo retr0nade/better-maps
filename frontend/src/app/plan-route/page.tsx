@@ -149,6 +149,44 @@ export default function PlanRoutePage() {
     return distanceMatrix[0][stopIndex + 1]; // +1 because start is at index 0
   };
 
+  const generateGoogleMapsUrl = (): string => {
+    if (optimizedOrder.length === 0) {
+      return '';
+    }
+
+    const locations = getAllLocations();
+    const orderedLocations = optimizedOrder.map(index => 
+      index === 0 ? startLocation : stops[index - 1]
+    );
+
+    // Start location (origin)
+    const origin = `${orderedLocations[0].lat},${orderedLocations[0].lng}`;
+    
+    // Last location (destination)
+    const destination = `${orderedLocations[orderedLocations.length - 1].lat},${orderedLocations[orderedLocations.length - 1].lng}`;
+    
+    // Waypoints (all locations except first and last)
+    const waypoints = orderedLocations.slice(1, -1)
+      .map(loc => `${loc.lat},${loc.lng}`)
+      .join('|');
+
+    const baseUrl = 'https://www.google.com/maps/dir/?api=1';
+    const params = new URLSearchParams({
+      origin,
+      destination,
+      ...(waypoints && { waypoints })
+    });
+
+    return `${baseUrl}&${params.toString()}`;
+  };
+
+  const openInGoogleMaps = () => {
+    const url = generateGoogleMapsUrl();
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
@@ -384,7 +422,18 @@ export default function PlanRoutePage() {
             {/* Optimized Route */}
             {optimizedOrder.length > 0 && (
               <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="text-xl font-semibold mb-4">Optimized Route</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Optimized Route</h2>
+                  <button
+                    onClick={openInGoogleMaps}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    <span>Open in Google Maps</span>
+                  </button>
+                </div>
                 <div className="space-y-2">
                   <p className="text-sm text-gray-600">
                     Total Distance: {(totalDistance / 1000).toFixed(2)} km
