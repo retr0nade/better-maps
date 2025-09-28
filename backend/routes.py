@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Optional
-from .utils import get_distance_matrix, solve_tsp
+from backend.utils import get_distance_matrix, solve_tsp
 
 router = APIRouter()
 

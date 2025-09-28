@@ -15,8 +15,8 @@ A multi-stop route optimization application with a FastAPI backend and Next.js f
 
 ```
 bettermaps/
+├── main.py              # FastAPI application entry point
 ├── backend/
-│   ├── main.py          # FastAPI application
 │   ├── routes.py        # API endpoints
 │   ├── models.py        # Pydantic models
 │   └── utils.py         # Distance matrix and TSP utilities

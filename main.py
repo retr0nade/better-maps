@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from .routes import router
+from backend.routes import router
 
 app = FastAPI(title="Route Optimizer API", version="1.0.0")
 
