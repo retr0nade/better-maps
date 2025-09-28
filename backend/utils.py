@@ -1,7 +1,9 @@
 import requests
 import time
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple, Optional
 import logging
+from ortools.constraint_solver import routing_enums_pb2
+from ortools.constraint_solver import pywrapcp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -157,3 +159,125 @@ def calculate_straight_line_matrix(locations: List[Dict[str, float]]) -> List[Li
                 distance_matrix[i][j] = calculate_straight_line_distance(locations[i], locations[j])
     
     return distance_matrix
+
+
+def solve_tsp(distance_matrix: List[List[float]], priority: Optional[List[int]] = None) -> Tuple[List[int], float]:
+    """
+    Solve Traveling Salesman Problem using OR-Tools.
+    
+    Args:
+        distance_matrix: 2D symmetric distance matrix in meters
+        priority: Optional list of node indices to visit first in order
+        
+    Returns:
+        Tuple of (optimized_order, total_distance)
+        - optimized_order: List of node indices in optimal visiting order
+        - total_distance: Total distance in meters
+        
+    Raises:
+        ValueError: If distance matrix is invalid or priority indices are out of range
+    """
+    if not distance_matrix:
+        raise ValueError("Distance matrix cannot be empty")
+    
+    n = len(distance_matrix)
+    
+    # Validate distance matrix
+    if n != len(distance_matrix[0]):
+        raise ValueError("Distance matrix must be square")
+    
+    if n < 2:
+        return [0], 0.0
+    
+    # Validate priority list
+    if priority is not None:
+        if not isinstance(priority, list):
+            raise ValueError("Priority must be a list of integers")
+        
+        # Check for valid indices
+        for idx in priority:
+            if not isinstance(idx, int) or idx < 0 or idx >= n:
+                raise ValueError(f"Invalid priority index: {idx}. Must be between 0 and {n-1}")
+        
+        # Check for duplicates
+        if len(priority) != len(set(priority)):
+            raise ValueError("Priority list contains duplicate indices")
+        
+        # Check if all nodes are in priority (for complete TSP)
+        if len(priority) == n:
+            # Calculate total distance for the given order
+            total_distance = 0.0
+            for i in range(len(priority) - 1):
+                total_distance += distance_matrix[priority[i]][priority[i + 1]]
+            return priority, total_distance
+    
+    # Create routing index manager
+    manager = pywrapcp.RoutingIndexManager(n, 1, 0)  # 1 vehicle, start at node 0
+    
+    # Create routing model
+    routing = pywrapcp.RoutingModel(manager)
+    
+    # Create distance callback
+    def distance_callback(from_index, to_index):
+        """Returns the distance between the two nodes."""
+        from_node = manager.IndexToNode(from_index)
+        to_node = manager.IndexToNode(to_index)
+        return distance_matrix[from_node][to_node]
+    
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+    
+    # Define cost of each arc
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    
+    # Add priority constraints if provided
+    if priority and len(priority) > 1:
+        # Create a sequence constraint for priority nodes
+        for i in range(len(priority) - 1):
+            current_node = priority[i]
+            next_node = priority[i + 1]
+            
+            # Add constraint: next_node must come immediately after current_node
+            routing.AddDisjunction([manager.NodeToIndex(current_node)], 0)
+            routing.AddDisjunction([manager.NodeToIndex(next_node)], 0)
+            
+            # Force the sequence
+            routing.solver().Add(
+                routing.NextVar(manager.NodeToIndex(current_node)) == 
+                manager.NodeToIndex(next_node)
+            )
+    
+    # Set search parameters
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+    search_parameters.first_solution_strategy = (
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+    )
+    search_parameters.local_search_metaheuristic = (
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+    )
+    search_parameters.time_limit.seconds = 30  # 30 second time limit
+    
+    # Solve the problem
+    logger.info(f"Solving TSP for {n} nodes with OR-Tools")
+    solution = routing.SolveWithParameters(search_parameters)
+    
+    if not solution:
+        raise RuntimeError("No solution found for TSP")
+    
+    # Extract solution
+    optimized_order = []
+    total_distance = 0.0
+    
+    index = routing.Start(0)
+    while not routing.IsEnd(index):
+        node = manager.IndexToNode(index)
+        optimized_order.append(node)
+        previous_index = index
+        index = solution.Value(routing.NextVar(index))
+        total_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+    
+    # Add the last node
+    optimized_order.append(manager.IndexToNode(index))
+    
+    logger.info(f"TSP solved: {len(optimized_order)} nodes, {total_distance:.2f}m total distance")
+    
+    return optimized_order, total_distance
