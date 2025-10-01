@@ -7,6 +7,12 @@ const TileLayer = dynamic(async () => (await import('react-leaflet')).TileLayer,
 const Marker = dynamic(async () => (await import('react-leaflet')).Marker, { ssr: false }) as any
 const Popup = dynamic(async () => (await import('react-leaflet')).Popup, { ssr: false }) as any
 const Polyline = dynamic(async () => (await import('react-leaflet')).Polyline, { ssr: false }) as any
+// Optional clustering if installed; otherwise gracefully ignore
+let MarkerClusterGroup: any = null as any
+try {
+  // @ts-ignore
+  MarkerClusterGroup = dynamic(async () => (await import('react-leaflet-cluster')).default, { ssr: false }) as any
+} catch {}
 const useMap = (await import('react-leaflet')).useMap as unknown as () => any // will be used inside child component only
 const useMapEvents = (await import('react-leaflet')).useMapEvents as unknown as (events: any) => any
 
@@ -145,27 +151,52 @@ export default function MapView({
             </Marker>
           )}
 
-          {/* Stops markers */}
-          {stops.map((s, idx) => (
-            <Marker
-              key={s.id ?? `${s.lat},${s.lng}-${idx}`}
-              position={[s.lat, s.lng]}
-              draggable
-              eventHandlers={{
-                dragend: (e: any) => handleMarkerDrag(idx, e),
-                contextmenu: () => onMarkerContextRemove && onMarkerContextRemove(idx),
-              }}
-            >
-              <Popup>
-                <div className="text-sm">
-                  <div className="font-semibold mb-1">{s.name ?? 'Waypoint'}</div>
-                  <button className="btn-primary" onClick={() => onMarkerContextRemove && onMarkerContextRemove(idx)} aria-label="Remove stop">
-                    Remove stop
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {/* Stops markers with optional clustering */}
+          {MarkerClusterGroup ? (
+            <MarkerClusterGroup chunkedLoading>
+              {stops.map((s, idx) => (
+                <Marker
+                  key={s.id ?? `${s.lat},${s.lng}-${idx}`}
+                  position={[s.lat, s.lng]}
+                  draggable
+                  eventHandlers={{
+                    dragend: (e: any) => handleMarkerDrag(idx, e),
+                    contextmenu: () => onMarkerContextRemove && onMarkerContextRemove(idx),
+                  }}
+                >
+                  <Popup>
+                    <div className="text-sm">
+                      <div className="font-semibold mb-1">{s.name ?? 'Waypoint'}</div>
+                      <button className="btn-primary" onClick={() => onMarkerContextRemove && onMarkerContextRemove(idx)} aria-label="Remove stop">
+                        Remove stop
+                      </button>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MarkerClusterGroup>
+          ) : (
+            stops.map((s, idx) => (
+              <Marker
+                key={s.id ?? `${s.lat},${s.lng}-${idx}`}
+                position={[s.lat, s.lng]}
+                draggable
+                eventHandlers={{
+                  dragend: (e: any) => handleMarkerDrag(idx, e),
+                  contextmenu: () => onMarkerContextRemove && onMarkerContextRemove(idx),
+                }}
+              >
+                <Popup>
+                  <div className="text-sm">
+                    <div className="font-semibold mb-1">{s.name ?? 'Waypoint'}</div>
+                    <button className="btn-primary" onClick={() => onMarkerContextRemove && onMarkerContextRemove(idx)} aria-label="Remove stop">
+                      Remove stop
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            ))
+          )}
 
           {/* Route polyline */}
           {routePolyline && routePolyline.length > 1 && (

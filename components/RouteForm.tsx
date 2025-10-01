@@ -253,7 +253,7 @@ export default function RouteForm({ start, stops: externalStops, onChange, onOpe
               {localStops.map((s, idx) => (
                 <Draggable key={s.id} draggableId={s.id} index={idx}>
                   {(drag) => (
-                    <div ref={drag.innerRef} {...drag.draggableProps} className="bg-white rounded-lg border border-gray-200 shadow-sm p-3">
+                    <div ref={drag.innerRef} {...drag.draggableProps} className="bg-white rounded-lg border border-gray-200 shadow-sm p-3" role="row" aria-label={`Stop ${idx + 1}`}>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <span className="font-medium">Stop {idx + 1}</span>
@@ -267,7 +267,7 @@ export default function RouteForm({ start, stops: externalStops, onChange, onOpe
                           <button className="text-red-600 hover:text-red-700 p-1 rounded focus:outline-none focus:ring-2 focus:ring-red-500" onClick={() => removeStop(idx)} aria-label="Remove stop">
                             <TrashIcon className="h-5 w-5" />
                           </button>
-                          <span {...drag.dragHandleProps} className="cursor-grab p-1 rounded hover:bg-gray-100" aria-label="Drag handle">
+                          <span {...drag.dragHandleProps} className="cursor-grab p-1 rounded hover:bg-gray-100" aria-label="Drag handle" role="button" tabIndex={0}>
                             <Bars3Icon className="h-5 w-5 text-gray-600" />
                           </span>
                         </div>

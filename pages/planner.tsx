@@ -4,6 +4,7 @@ import debounce from 'debounce'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import MapView from '../components/MapView'
 import { nominatimSearch, NominatimSuggestion as Suggestion } from '../lib/geocode'
+import debounce from 'debounce'
 
 type Stop = {
   id: string
@@ -55,6 +56,8 @@ export default function PlannerPage(): JSX.Element {
       } catch {
         setSuggestions([])
         setActiveIndex(-1)
+        setComputeError('Search rate limited or unavailable. Try again in a minute or consider self-hosting for heavy use.')
+        setTimeout(() => setComputeError(null), 3000)
       }
     }, 300),
     []
@@ -188,6 +191,11 @@ export default function PlannerPage(): JSX.Element {
       const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=false` 
 
       const osrmRes = await fetch(osrmUrl)
+      if (osrmRes.status === 429) {
+        setComputeError('OSRM rate limit reached. Try again shortly or use a private OSRM instance for heavy use.')
+        setTimeout(() => setComputeError(null), 4000)
+        return
+      }
       if (!osrmRes.ok) throw new Error('OSRM request failed')
       const osrm = await osrmRes.json()
       const route = osrm?.routes?.[0]
@@ -201,7 +209,7 @@ export default function PlannerPage(): JSX.Element {
     }
   }
 
-  const refreshPreviewDistance = async (currentStops: Stop[]) => {
+  const refreshPreviewDistance = useMemo(() => debounce(async (currentStops: Stop[]) => {
     try {
       if (currentStops.length < 2) {
         setPreviewKm(null)
@@ -213,6 +221,11 @@ export default function PlannerPage(): JSX.Element {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ locations }),
       })
+      if (resp.status === 429) {
+        setComputeError('Rate limit reached. Try again in a minute or self-host Nominatim/OSRM for heavy use.')
+        setTimeout(() => setComputeError(null), 3000)
+        return
+      }
       if (!resp.ok) return setPreviewKm(null)
       const data = await resp.json()
       const matrix: number[][] = data?.matrix || []
@@ -222,7 +235,7 @@ export default function PlannerPage(): JSX.Element {
     } catch {
       setPreviewKm(null)
     }
-  }
+  }, 300), [])
 
   const undoLast = () => {
     if (!undoAction) return
@@ -344,6 +357,13 @@ export default function PlannerPage(): JSX.Element {
 
   return (
     <div className={`min-h-screen ${isFullscreen ? '' : 'relative'}`}>
+      {stops.length > 12 && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50">
+          <div className="overlay-panel text-sm">
+            You have more than 12 stops. For best performance, split into multiple runs or consider BetterMaps Pro.
+          </div>
+        </div>
+      )}
       {/* Search Bar (Top-left) */}
       {(!isFullscreen || showSearch) && (
         <div className={`absolute left-4 ${isFullscreen ? 'top-6' : 'top-20'} z-40 w-[min(92vw,420px)]`}>
@@ -354,6 +374,9 @@ export default function PlannerPage(): JSX.Element {
             placeholder="Search places..."
             aria-label="Search places"
             className="input-field"
+            role="combobox"
+            aria-expanded={suggestions.length > 0}
+            aria-controls="global-suggestions"
             onKeyDown={(e) => {
               if (!suggestions.length) return
               if (e.key === 'ArrowDown') {
@@ -372,7 +395,7 @@ export default function PlannerPage(): JSX.Element {
             }}
           />
           {suggestions.length > 0 && (
-            <div className="mt-2 max-h-60 overflow-auto rounded-md border border-gray-200 bg-white shadow" role="listbox">
+            <div id="global-suggestions" className="mt-2 max-h-60 overflow-auto rounded-md border border-gray-200 bg-white shadow" role="listbox">
               {suggestions.map((s, idx) => (
                 <button
                   key={`${s.lat}-${s.lon}`}
