@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import debounce from 'debounce'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
@@ -33,6 +33,7 @@ export default function PlannerPage(): JSX.Element {
   const [newStopName, setNewStopName] = useState('')
   const [previewKm, setPreviewKm] = useState<number | null>(null)
   const [undoAction, setUndoAction] = useState<{ type: 'add' | 'remove'; stop: Stop; index: number } | null>(null)
+  const [showSearch, setShowSearch] = useState(true)
 
   const mapCenter = useMemo<[number, number]>(() => [37.773972, -122.431297], [])
   const mapRef = useRef<any>(null)
@@ -61,6 +62,25 @@ export default function PlannerPage(): JSX.Element {
     setQuery(q)
     searchPlaces(q)
   }
+
+  // Initialize drawer collapsed on small screens (mobile-first)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth < 768) setDrawerOpen(false)
+    }
+  }, [])
+
+  // Escape exits fullscreen
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false)
+        setShowSearch(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isFullscreen])
 
   const handleSelectSuggestion = (s: Suggestion) => {
     setSelectedSuggestion(s)
@@ -228,11 +248,28 @@ export default function PlannerPage(): JSX.Element {
     if (typeof window !== 'undefined') window.open(url, '_blank')
   }
 
+  const addCurrentLocationAsStop = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const stop: Stop = {
+        id: `${pos.coords.latitude},${pos.coords.longitude}-${Date.now()}`,
+        name: 'Current Location',
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      }
+      const next = [...stops, stop]
+      setStops(next)
+      setUndoAction({ type: 'add', stop, index: stops.length })
+      void refreshPreviewDistance(next)
+    })
+  }
+
   return (
     <div className={`min-h-screen ${isFullscreen ? '' : 'relative'}`}>
       {/* Search Bar (Top-left) */}
-      <div className="absolute left-4 top-20 z-40 w-[min(92vw,420px)]">
-        <div className="overlay-panel">
+      {(!isFullscreen || showSearch) && (
+        <div className={`absolute left-4 ${isFullscreen ? 'top-6' : 'top-20'} z-40 w-[min(92vw,420px)]`}>
+          <div className="overlay-panel">
           <input
             value={query}
             onChange={onQueryChange}
@@ -280,12 +317,14 @@ export default function PlannerPage(): JSX.Element {
               <button onClick={addSelectedAsStop} className="btn-primary" aria-label="Add selected place as stop">Add as stop</button>
             </div>
           )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Right Drawer */}
-      <div className={`fixed top-20 right-4 z-30 transition-smooth ${drawerOpen ? 'w-[90vw] sm:w-[420px]' : 'w-10'} `}>
-        <div className={`overlay-panel ${drawerOpen ? '' : 'p-0'} relative`}>
+      {!isFullscreen && (
+        <div className={`fixed z-30 transition-smooth ${drawerOpen ? 'md:top-20 md:right-4 md:w-[420px] bottom-0 left-0 right-0' : 'md:top-20 md:right-4 bottom-20 right-4 w-10'}`}>
+          <div className={`overlay-panel ${drawerOpen ? 'md:rounded-xl rounded-t-2xl' : 'p-0'} relative`}>
           <button
             aria-label={drawerOpen ? 'Collapse panel' : 'Expand panel'}
             className="absolute -left-3 top-4 h-8 w-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center hover:bg-gray-50"
@@ -382,20 +421,25 @@ export default function PlannerPage(): JSX.Element {
             />
           </div>
         </div>
-      </div>
+      )}
 
       {/* Floating Actions (Bottom-right) */}
-      <div className="fab-container">
-        <button className="fab" onClick={computeRoute} aria-label="Compute Route">
-          ▶
-        </button>
-        <button className="fab fab-secondary" onClick={() => setIsFullscreen((v) => !v)} aria-label="Toggle Fullscreen Map">
-          ⛶
-        </button>
-        <button className="fab fab-secondary" onClick={exportShare} aria-label="Export or Share">
-          ↗
-        </button>
-      </div>
+      {!isFullscreen && (
+        <div className="fab-container">
+          <button className="fab" onClick={computeRoute} aria-label="Compute Route">▶</button>
+          <button className="fab fab-secondary" onClick={() => { setIsFullscreen(true); setShowSearch(false) }} aria-label="Enter Fullscreen">⛶</button>
+          <button className="fab fab-secondary" onClick={exportShare} aria-label="Export or Share">↗</button>
+        </div>
+      )}
+
+      {isFullscreen && (
+        <div className="absolute right-4 bottom-6 z-50 flex items-center gap-2">
+          <button className="overlay-panel px-3 py-2 text-sm" onClick={() => setShowSearch((v) => !v)} aria-label="Toggle search">Search</button>
+          <button className="overlay-panel px-3 py-2 text-sm" onClick={addCurrentLocationAsStop} aria-label="Add current location">+ My Location</button>
+          <button className="overlay-panel px-3 py-2 text-sm" onClick={computeRoute} aria-label="Compute route">Compute</button>
+          <button className="overlay-panel px-3 py-2 text-sm" onClick={() => { setIsFullscreen(false); setShowSearch(true) }} aria-label="Exit fullscreen">Exit</button>
+        </div>
+      )}
 
       {/* Contextual actions after map click */}
       {pendingClick && (
