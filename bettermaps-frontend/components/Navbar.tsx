@@ -1,55 +1,113 @@
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useState } from 'react'
+import Link from 'next/link'
+import { Popover, Transition } from '@headlessui/react'
+import { Bars3Icon, XMarkIcon, UserCircleIcon } from '@heroicons/react/24/outline'
 
-const Navbar: React.FC = () => {
-  const [open, setOpen] = useState(false);
+export default function Navbar(): JSX.Element {
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const NavLinks = () => (
+    <>
+      <Link href="/" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        Home
+      </Link>
+      <Link href="/planner" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        Try Now
+      </Link>
+      <Link href="/download" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        Download App
+      </Link>
+      <Link href="/feedback" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        Feedback
+      </Link>
+    </>
+  )
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-100">
+    <nav className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-gray-100">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-white font-bold">BM</span>
+            <Link href="/" className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md">
+              <div className="h-8 w-8 rounded-md bg-blue-600 text-white flex items-center justify-center font-bold">BM</div>
               <span className="text-lg font-semibold text-gray-900">BetterMaps</span>
             </Link>
           </div>
 
-          {/* Desktop menu */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors">Home</Link>
-            <Link href="/planner" className="text-gray-700 hover:text-blue-600 transition-colors">Try Now</Link>
-            <Link href="/download" className="text-gray-700 hover:text-blue-600 transition-colors">Download App</Link>
+          <div className="hidden md:flex items-center gap-1">
+            <NavLinks />
           </div>
 
-          {/* Mobile hamburger */}
-          <button
-            aria-label="Toggle menu"
-            aria-expanded={open}
-            onClick={() => setOpen(v => !v)}
-            className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            <svg className={`h-6 w-6 ${open ? 'hidden' : 'block'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-            <svg className={`h-6 w-6 ${open ? 'block' : 'hidden'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <div className="md:hidden">
+            <button aria-label="Open menu" onClick={() => setMobileOpen(true)} className="p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+              <Bars3Icon className="h-6 w-6 text-gray-700" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile menu panel */}
-      <div className={`${open ? 'block' : 'hidden'} md:hidden border-t border-gray-100 bg-white`}
-           onClick={() => setOpen(false)}>
-        <div className="container mx-auto px-4 py-3 space-y-1">
-          <Link href="/" className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50">Home</Link>
-          <Link href="/planner" className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50">Try Now</Link>
-          <Link href="/download" className="block px-3 py-2 rounded-md text-gray-700 hover:bg-gray-50">Download App</Link>
+      {/* Mobile Menu */}
+      <Transition
+        show={mobileOpen}
+        enter="transition duration-150 ease-out"
+        enterFrom="opacity-0 -translate-y-2"
+        enterTo="opacity-100 translate-y-0"
+        leave="transition duration-100 ease-in"
+        leaveFrom="opacity-100 translate-y-0"
+        leaveTo="opacity-0 -translate-y-2"
+      >
+        <div className="md:hidden border-t border-gray-100 bg-white">
+          <div className="container mx-auto px-4 py-2 flex items-center justify-between">
+            <span className="text-sm text-gray-600">Menu</span>
+            <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+              <XMarkIcon className="h-6 w-6 text-gray-700" />
+            </button>
+          </div>
+          <div className="container mx-auto px-4 pb-3 flex flex-col gap-1">
+            <NavLinks />
+          </div>
+        </div>
+      </Transition>
+
+      {/* Profile FAB (bottom-left) */}
+      <Link
+        href="#"
+        aria-label="Open profile and settings"
+        className="fab fab-secondary left-6 bottom-6"
+        style={{ position: 'fixed' }}
+      >
+        <UserCircleIcon className="h-6 w-6" />
+      </Link>
+    </nav>
+  )
+}
+
+import React from 'react';
+import Link from 'next/link';
+
+const Navbar: React.FC = () => {
+  return (
+    <nav className="bg-white shadow-lg">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center py-4">
+          <Link href="/" className="text-2xl font-bold text-blue-600">
+            Better Maps
+          </Link>
+          
+          <div className="space-x-6">
+            <Link 
+              href="/" 
+              className="text-gray-700 hover:text-blue-600 transition duration-300"
+            >
+              Home
+            </Link>
+            <Link 
+              href="/planner" 
+              className="text-gray-700 hover:text-blue-600 transition duration-300"
+            >
+              Route Planner
+            </Link>
+          </div>
         </div>
       </div>
     </nav>
@@ -57,5 +115,3 @@ const Navbar: React.FC = () => {
 };
 
 export default Navbar;
-
-

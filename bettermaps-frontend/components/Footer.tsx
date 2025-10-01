@@ -1,47 +1,103 @@
+import React from 'react'
+import Link from 'next/link'
+
+function SocialLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className="p-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900"
+    >
+      {children}
+    </Link>
+  )
+}
+
+export default function Footer(): JSX.Element {
+  const year = new Date().getFullYear()
+  return (
+    <footer className="mt-16 bg-gray-900 text-gray-300">
+      <div className="container mx-auto px-4 py-10">
+        <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-7 w-7 rounded-md bg-blue-600 text-white flex items-center justify-center text-sm font-bold">BM</div>
+              <span className="text-white font-semibold">BetterMaps</span>
+            </div>
+            <p className="text-sm text-gray-400">Optimize your multi-stop routes.</p>
+          </div>
+
+          <nav className="flex items-center gap-4">
+            <Link href="/" className="text-sm hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded">Home</Link>
+            <Link href="/planner" className="text-sm hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded">Try Now</Link>
+            <Link href="/download" className="text-sm hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded">Download</Link>
+            <Link href="/feedback" className="text-sm hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded">Feedback</Link>
+          </nav>
+
+          <div className="flex items-center gap-1">
+            <SocialLink href="https://twitter.com" label="Twitter">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                <path d="M19.633 7.997c.013.18.013.36.013.54 0 5.49-4.177 11.82-11.82 11.82-2.35 0-4.532-.69-6.37-1.88.33.04.65.053.99.053a8.36 8.36 0 0 0 5.18-1.78 4.18 4.18 0 0 1-3.9-2.9c.26.04.52.066.79.066.38 0 .76-.053 1.11-.146a4.17 4.17 0 0 1-3.35-4.09v-.053c.56.31 1.2.5 1.88.52a4.16 4.16 0 0 1-1.86-3.46c0-.78.21-1.5.58-2.13a11.83 11.83 0 0 0 8.59 4.36 4.7 4.7 0 0 1-.1-.95 4.17 4.17 0 0 1 7.22-2.85 8.2 8.2 0 0 0 2.64-1 4.18 4.18 0 0 1-1.83 2.3 8.38 8.38 0 0 0 2.4-.63 9.01 9.01 0 0 1-2.09 2.16z" />
+              </svg>
+            </SocialLink>
+            <SocialLink href="https://linkedin.com" label="LinkedIn">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.761 0 5-2.239 5-5v-14c0-2.761-2.239-5-5-5zm-11 19h-3v-10h3v10zm-1.5-11.268c-.966 0-1.75-.79-1.75-1.764 0-.974.784-1.764 1.75-1.764s1.75.79 1.75 1.764c0 .974-.784 1.764-1.75 1.764zm13.5 11.268h-3v-5.604c0-1.336-.027-3.056-1.861-3.056-1.862 0-2.147 1.454-2.147 2.957v5.703h-3v-10h2.881v1.367h.041c.401-.76 1.381-1.56 2.842-1.56 3.041 0 3.604 2.002 3.604 4.605v5.588z" />
+              </svg>
+            </SocialLink>
+            <SocialLink href="https://github.com" label="GitHub">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                <path fillRule="evenodd" d="M12 2C6.477 2 2 6.486 2 12.021c0 4.429 2.865 8.185 6.839 9.504.5.092.682-.217.682-.482 0-.237-.009-.865-.013-1.698-2.782.605-3.369-1.343-3.369-1.343-.455-1.163-1.11-1.473-1.11-1.473-.908-.62.069-.607.069-.607 1.004.071 1.532 1.03 1.532 1.03.892 1.531 2.341 1.089 2.91.833.092-.65.35-1.089.636-1.34-2.221-.254-4.556-1.112-4.556-4.952 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.56 9.56 0 0 1 2.504.337c1.909-1.296 2.748-1.026 2.748-1.026.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.85-2.338 4.695-4.566 4.944.359.31.678.92.678 1.855 0 1.339-.012 2.419-.012 2.747 0 .267.18.578.688.48C19.138 20.203 22 16.448 22 12.02 22 6.487 17.522 2 12 2Z" clipRule="evenodd" />
+              </svg>
+            </SocialLink>
+          </div>
+        </div>
+
+        <div className="mt-8 border-t border-gray-800 pt-6 text-center text-sm text-gray-500">
+          © {year} BetterMaps. All rights reserved.
+        </div>
+      </div>
+    </footer>
+  )
+}
+
 import React from 'react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="mt-16 bg-gray-900 text-gray-300">
-      <div className="container mx-auto px-4 py-10">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-sm">© 2025 BetterMaps</p>
-
-          <div className="flex items-center gap-5">
-            <a
-              href="https://twitter.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Twitter"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                <path d="M19.633 7.997c.013.176.013.353.013.53 0 5.4-4.11 11.627-11.627 11.627-2.312 0-4.46-.68-6.27-1.85.321.038.63.05.963.05a8.22 8.22 0 0 0 5.096-1.753 4.107 4.107 0 0 1-3.834-2.846c.252.037.504.062.77.062.37 0 .74-.05 1.086-.139a4.1 4.1 0 0 1-3.29-4.025v-.05c.546.304 1.175.492 1.844.517a4.093 4.093 0 0 1-1.83-3.415c0-.754.202-1.44.558-2.04a11.65 11.65 0 0 0 8.45 4.287 4.623 4.623 0 0 1-.102-.94 4.096 4.096 0 0 1 7.086-2.8 8.06 8.06 0 0 0 2.6-.99 4.11 4.11 0 0 1-1.8 2.26 8.19 8.19 0 0 0 2.363-.64 8.824 8.824 0 0 1-2.056 2.12Z"/>
-              </svg>
-            </a>
-            <a
-              href="https://www.linkedin.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="LinkedIn"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                <path d="M4.983 3.5C4.983 4.88 3.88 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.483 1.12 2.483 2.5ZM.5 8h4V24h-4V8Zm7.497 0h3.84v2.183h.054c.535-1.015 1.84-2.086 3.787-2.086C20.4 8.097 22 10.17 22 13.675V24h-4v-8.87c0-2.113-.754-3.555-2.64-3.555-1.44 0-2.297.974-2.673 1.913-.138.337-.173.807-.173 1.28V24h-4s.054-13.772 0-16Z"/>
-              </svg>
-            </a>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="GitHub"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                <path fillRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12a10 10 0 0 0 6.837 9.488c.5.087.683-.217.683-.486 0-.24-.01-1.039-.014-1.886-2.782.604-3.37-1.184-3.37-1.184-.455-1.156-1.11-1.464-1.11-1.464-.908-.62.07-.607.07-.607 1.004.07 1.532 1.032 1.532 1.032.893 1.53 2.343 1.088 2.914.833.092-.647.35-1.088.636-1.339-2.22-.252-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.03-2.683-.104-.253-.447-1.27.098-2.646 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0 1 12 6.844c.85.004 1.706.115 2.504.337 1.908-1.294 2.747-1.025 2.747-1.025.547 1.376.204 2.393.1 2.646.64.699 1.028 1.592 1.028 2.683 0 3.842-2.338 4.688-4.566 4.936.359.309.678.92.678 1.855 0 1.339-.012 2.419-.012 2.749 0 .271.18.577.688.478A10.001 10.001 0 0 0 22 12c0-5.523-4.477-10-10-10Z" clipRule="evenodd"/>
-              </svg>
-            </a>
+    <footer className="bg-gray-800 text-white py-8 mt-16">
+      <div className="container mx-auto px-4">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div>
+            <h3 className="text-xl font-bold mb-4">Better Maps</h3>
+            <p className="text-gray-300">
+              Optimize your routes with intelligent pathfinding and real-time distance calculations.
+            </p>
           </div>
+          
+          <div>
+            <h4 className="text-lg font-semibold mb-4">Features</h4>
+            <ul className="space-y-2 text-gray-300">
+              <li>• Interactive Maps</li>
+              <li>• Route Optimization</li>
+              <li>• Distance Analysis</li>
+              <li>• Google Maps Integration</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="text-lg font-semibold mb-4">Technology</h4>
+            <ul className="space-y-2 text-gray-300">
+              <li>• Next.js & TypeScript</li>
+              <li>• Tailwind CSS</li>
+              <li>• React Leaflet</li>
+              <li>• OR-Tools TSP Solver</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-300">
+          <p>&copy; 2024 Better Maps. All rights reserved.</p>
         </div>
       </div>
     </footer>
@@ -49,5 +105,3 @@ const Footer: React.FC = () => {
 };
 
 export default Footer;
-
-
