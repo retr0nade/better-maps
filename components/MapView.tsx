@@ -1,3 +1,193 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
+
+// Dynamically import react-leaflet primitives to be SSR-safe
+const MapContainer = dynamic(async () => (await import('react-leaflet')).MapContainer, { ssr: false }) as any
+const TileLayer = dynamic(async () => (await import('react-leaflet')).TileLayer, { ssr: false }) as any
+const Marker = dynamic(async () => (await import('react-leaflet')).Marker, { ssr: false }) as any
+const Popup = dynamic(async () => (await import('react-leaflet')).Popup, { ssr: false }) as any
+const Polyline = dynamic(async () => (await import('react-leaflet')).Polyline, { ssr: false }) as any
+const useMap = (await import('react-leaflet')).useMap as unknown as () => any // will be used inside child component only
+const useMapEvents = (await import('react-leaflet')).useMapEvents as unknown as (events: any) => any
+
+export type LatLngTuple = [number, number]
+
+export type MapStop = {
+  id?: string
+  name?: string
+  lat: number
+  lng: number
+}
+
+type Props = {
+  initialCenter?: LatLngTuple
+  stops: MapStop[]
+  routePolyline?: LatLngTuple[]
+  onMapClick?: (latlng: LatLngTuple) => void
+  onMarkerDrag?: (index: number, latlng: LatLngTuple) => void
+  onCenterChange?: (center: LatLngTuple) => void
+  onMarkerContextRemove?: (index: number) => void
+  followMeEnabled?: boolean
+  onToggleFollowMe?: (enabled: boolean) => void
+}
+
+function MapEvents({ onClick, onCenterChange }: { onClick?: (ll: LatLngTuple) => void; onCenterChange?: (c: LatLngTuple) => void }) {
+  const map = (useMap as any)()
+  useMapEvents({
+    click(e: any) {
+      if (onClick) onClick([e.latlng.lat, e.latlng.lng])
+    },
+    moveend() {
+      const c = map.getCenter()
+      if (onCenterChange) onCenterChange([c.lat, c.lng])
+    },
+  })
+  return null
+}
+
+export default function MapView({
+  initialCenter,
+  stops,
+  routePolyline,
+  onMapClick,
+  onMarkerDrag,
+  onCenterChange,
+  onMarkerContextRemove,
+  followMeEnabled,
+  onToggleFollowMe,
+}: Props): JSX.Element {
+  const defaultCenter: LatLngTuple = initialCenter ?? [20.5937, 78.9629]
+  const [mounted, setMounted] = useState(false)
+  const [userPos, setUserPos] = useState<LatLngTuple | null>(null)
+  const mapRef = useRef<any>(null)
+  const watchIdRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Geolocation request on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!('geolocation' in navigator)) return
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const ll: LatLngTuple = [pos.coords.latitude, pos.coords.longitude]
+        setUserPos(ll)
+        if (mapRef.current && mapRef.current.setView) {
+          mapRef.current.setView(ll, 13)
+        }
+      },
+      () => {
+        // ignore errors
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+    )
+  }, [])
+
+  // Follow-me toggle handling (watchPosition)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!('geolocation' in navigator)) return
+    if (followMeEnabled) {
+      const id = navigator.geolocation.watchPosition(
+        (pos) => {
+          const ll: LatLngTuple = [pos.coords.latitude, pos.coords.longitude]
+          setUserPos(ll)
+          if (mapRef.current && mapRef.current.setView) {
+            mapRef.current.setView(ll)
+          }
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+      )
+      watchIdRef.current = id as unknown as number
+      return () => {
+        if (watchIdRef.current != null && navigator.geolocation.clearWatch) {
+          navigator.geolocation.clearWatch(watchIdRef.current)
+          watchIdRef.current = null
+        }
+      }
+    }
+  }, [followMeEnabled])
+
+  const handleMarkerDrag = (index: number, e: any) => {
+    const lat = e.target.getLatLng().lat
+    const lng = e.target.getLatLng().lng
+    if (onMarkerDrag) onMarkerDrag(index, [lat, lng])
+  }
+
+  if (!mounted) return <div className="fullmap page-fade" />
+
+  return (
+    <div className="relative">
+      {/* Low-contrast overlay area for UI elements could be slotted above map by parent */}
+      <div className="rounded-xl overflow-hidden shadow-sm">
+        <MapContainer
+          center={defaultCenter}
+          zoom={5}
+          scrollWheelZoom
+          whenCreated={(map: any) => (mapRef.current = map)}
+          className="fullmap page-fade"
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          {/* Map events for click + center change */}
+          <MapEvents onClick={(ll) => onMapClick && onMapClick(ll)} onCenterChange={(c) => onCenterChange && onCenterChange(c)} />
+
+          {/* User location */}
+          {userPos && (
+            <Marker position={userPos}>
+              <Popup>You</Popup>
+            </Marker>
+          )}
+
+          {/* Stops markers */}
+          {stops.map((s, idx) => (
+            <Marker
+              key={s.id ?? `${s.lat},${s.lng}-${idx}`}
+              position={[s.lat, s.lng]}
+              draggable
+              eventHandlers={{
+                dragend: (e: any) => handleMarkerDrag(idx, e),
+                contextmenu: () => onMarkerContextRemove && onMarkerContextRemove(idx),
+              }}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <div className="font-semibold mb-1">{s.name ?? 'Waypoint'}</div>
+                  <button className="btn-primary" onClick={() => onMarkerContextRemove && onMarkerContextRemove(idx)} aria-label="Remove stop">
+                    Remove stop
+                  </button>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+
+          {/* Route polyline */}
+          {routePolyline && routePolyline.length > 1 && (
+            <Polyline positions={routePolyline} pathOptions={{ color: '#2563eb', weight: 4, opacity: 0.85 }} />
+          )}
+        </MapContainer>
+      </div>
+
+      {/* Follow me toggle overlay */}
+      <div className="absolute top-3 right-3">
+        <button
+          className="overlay-panel px-3 py-2 text-sm"
+          onClick={() => onToggleFollowMe && onToggleFollowMe(!followMeEnabled)}
+          aria-label="Toggle follow me"
+        >
+          {followMeEnabled ? 'Following you' : 'Follow me'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 import React, { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 
