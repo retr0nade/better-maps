@@ -2,53 +2,29 @@ import React from 'react';
 import Link from 'next/link';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import AnimatedHero from '../components/AnimatedHero';
 
 const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-16">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Better Maps
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Optimize your multi-stop routes with intelligent pathfinding and real-time distance calculations.
-          </p>
-          <Link 
-            href="/planner"
-            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-300 shadow-lg hover:shadow-xl"
-          >
-            Start Planning Routes
-          </Link>
-        </div>
+      <main className="container mx-auto px-4 py-10 md:py-16">
+        <AnimatedHero />
 
-        {/* Features Section */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-white rounded-lg p-6 shadow-md">
-            <div className="text-blue-600 text-3xl mb-4">🗺️</div>
-            <h3 className="text-xl font-semibold mb-3">Interactive Maps</h3>
-            <p className="text-gray-600">
-              Visualize your routes with Leaflet.js integration for seamless map interaction.
-            </p>
+        {/* Condensed Features */}
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16">
+          <div className="overlay-panel">
+            <h3 className="text-lg font-semibold mb-2">Distance Overview</h3>
+            <p className="text-gray-600 text-sm">Quickly inspect distances and ETAs between multiple stops.</p>
           </div>
-          
-          <div className="bg-white rounded-lg p-6 shadow-md">
-            <div className="text-blue-600 text-3xl mb-4">⚡</div>
-            <h3 className="text-xl font-semibold mb-3">Smart Optimization</h3>
-            <p className="text-gray-600">
-              OR-Tools TSP solver finds the most efficient route through all your stops.
-            </p>
+          <div className="overlay-panel">
+            <h3 className="text-lg font-semibold mb-2">TSP Optimization</h3>
+            <p className="text-gray-600 text-sm">Solve multi-stop routes efficiently using OR-Tools.</p>
           </div>
-          
-          <div className="bg-white rounded-lg p-6 shadow-md">
-            <div className="text-blue-600 text-3xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold mb-3">Real-time Analysis</h3>
-            <p className="text-gray-600">
-              Get accurate distance calculations using OSRM routing service.
-            </p>
+          <div className="overlay-panel">
+            <h3 className="text-lg font-semibold mb-2">Priority Stops</h3>
+            <p className="text-gray-600 text-sm">Reorder critical locations and respect constraints.</p>
           </div>
         </div>
 
@@ -88,6 +64,13 @@ const HomePage: React.FC = () => {
               <p className="text-sm text-gray-600">Send to Google Maps for turn-by-turn directions</p>
             </div>
           </div>
+        </div>
+
+        {/* Feedback CTA */}
+        <div className="text-center mt-12">
+          <Link href="/feedback" className="btn-primary" aria-label="Leave feedback for BetterMaps">
+            Leave feedback
+          </Link>
         </div>
       </main>
 
