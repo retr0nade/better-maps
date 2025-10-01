@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import debounce from 'debounce'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import MapView from '../components/MapView'
 import { nominatimSearch, NominatimSuggestion as Suggestion } from '../lib/geocode'
 
 type Stop = {
@@ -12,11 +13,7 @@ type Stop = {
   isPriority?: boolean
 }
 
-const MapContainer = dynamic(async () => (await import('react-leaflet')).MapContainer, { ssr: false }) as any
-const TileLayer = dynamic(async () => (await import('react-leaflet')).TileLayer, { ssr: false }) as any
-const Marker = dynamic(async () => (await import('react-leaflet')).Marker, { ssr: false }) as any
-const Popup = dynamic(async () => (await import('react-leaflet')).Popup, { ssr: false }) as any
-const Polyline = dynamic(async () => (await import('react-leaflet')).Polyline, { ssr: false }) as any
+// Map primitives are handled inside MapView
 
 export default function PlannerPage(): JSX.Element {
   const [stops, setStops] = useState<Stop[]>([])
@@ -31,6 +28,11 @@ export default function PlannerPage(): JSX.Element {
   const [totalDurationS, setTotalDurationS] = useState<number | null>(null)
   const [routePolyline, setRoutePolyline] = useState<[number, number][]>([])
   const [computeError, setComputeError] = useState<string | null>(null)
+  const [pendingClick, setPendingClick] = useState<[number, number] | null>(null)
+  const [showNameModal, setShowNameModal] = useState(false)
+  const [newStopName, setNewStopName] = useState('')
+  const [previewKm, setPreviewKm] = useState<number | null>(null)
+  const [undoAction, setUndoAction] = useState<{ type: 'add' | 'remove'; stop: Stop; index: number } | null>(null)
 
   const mapCenter = useMemo<[number, number]>(() => [37.773972, -122.431297], [])
   const mapRef = useRef<any>(null)
@@ -86,7 +88,9 @@ export default function PlannerPage(): JSX.Element {
       lng,
     }
     setStops((prev) => [...prev, newStop])
+    setUndoAction({ type: 'add', stop: newStop, index: (stops?.length ?? 0) })
     setSelectedSuggestion(null)
+    void refreshPreviewDistance([...stops, newStop])
   }
 
   const onDragEnd = (result: DropResult) => {
@@ -102,7 +106,13 @@ export default function PlannerPage(): JSX.Element {
   }
 
   const removeStop = (id: string) => {
-    setStops((prev) => prev.filter((s) => s.id !== id))
+    setStops((prev) => {
+      const idx = prev.findIndex((s) => s.id === id)
+      if (idx >= 0) setUndoAction({ type: 'remove', stop: prev[idx], index: idx })
+      const next = prev.filter((s) => s.id !== id)
+      void refreshPreviewDistance(next)
+      return next
+    })
   }
 
   const addManualStop = async (address: string) => {
@@ -166,6 +176,45 @@ export default function PlannerPage(): JSX.Element {
     } catch (e) {
       setComputeError('Could not compute optimized route. Using current order. You can still navigate or try again later.')
     }
+  }
+
+  const refreshPreviewDistance = async (currentStops: Stop[]) => {
+    try {
+      if (currentStops.length < 2) {
+        setPreviewKm(null)
+        return
+      }
+      const locations = currentStops.map((p) => ({ lat: p.lat, lng: p.lng, name: p.name }))
+      const resp = await fetch('http://localhost:8000/distance-matrix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locations }),
+      })
+      if (!resp.ok) return setPreviewKm(null)
+      const data = await resp.json()
+      const matrix: number[][] = data?.matrix || []
+      let total = 0
+      for (let i = 0; i < locations.length - 1; i++) total += matrix[i]?.[i + 1] ?? 0
+      setPreviewKm(total / 1000)
+    } catch {
+      setPreviewKm(null)
+    }
+  }
+
+  const undoLast = () => {
+    if (!undoAction) return
+    if (undoAction.type === 'add') {
+      setStops((prev) => prev.filter((s) => s.id !== undoAction.stop.id))
+      void refreshPreviewDistance(stops.filter((s) => s.id !== undoAction.stop.id))
+    } else if (undoAction.type === 'remove') {
+      setStops((prev) => {
+        const next = [...prev]
+        next.splice(undoAction.index, 0, undoAction.stop)
+        void refreshPreviewDistance(next)
+        return next
+      })
+    }
+    setUndoAction(null)
   }
 
   const exportShare = () => {
@@ -311,31 +360,26 @@ export default function PlannerPage(): JSX.Element {
       <div className={`relative ${isFullscreen ? 'fixed inset-0 z-20' : 'container mx-auto px-4'} mt-4`}>
         <div className="rounded-xl overflow-hidden bg-white shadow">
           <div className="fullmap">
-            <MapContainer
-              center={mapCenter}
-              zoom={12}
-              scrollWheelZoom
-              whenCreated={(map) => (mapRef.current = map)}
-              className="h-full w-full"
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {stops.map((s) => (
-                <Marker key={s.id} position={[s.lat, s.lng]}>
-                  <Popup>
-                    <div className="text-sm">
-                      <div className="font-semibold mb-1">{s.name}</div>
-                      <button className="btn-secondary" onClick={() => removeStop(s.id)} aria-label="Remove stop">Remove</button>
-          </div>
-                  </Popup>
-                </Marker>
-              ))}
-              {routePolyline.length > 1 && (
-                <Polyline positions={routePolyline} pathOptions={{ color: '#2563eb', weight: 4, opacity: 0.85 }} />
-              )}
-            </MapContainer>
+            <MapView
+              initialCenter={mapCenter}
+              stops={stops}
+              routePolyline={routePolyline}
+              onMapClick={(ll) => setPendingClick(ll)}
+              onMarkerDrag={(idx, ll) => {
+                setStops((prev) => {
+                  const next = [...prev]
+                  if (next[idx]) {
+                    next[idx] = { ...next[idx], lat: ll[0], lng: ll[1] }
+                  }
+                  void refreshPreviewDistance(next)
+                  return next
+                })
+              }}
+              onMarkerContextRemove={(idx) => {
+                const target = stops[idx]
+                if (target) removeStop(target.id)
+              }}
+            />
           </div>
         </div>
       </div>
@@ -352,6 +396,62 @@ export default function PlannerPage(): JSX.Element {
           ↗
         </button>
       </div>
+
+      {/* Contextual actions after map click */}
+      {pendingClick && (
+        <div className="absolute left-4 top-40 z-40">
+          <div className="overlay-panel">
+            <div className="text-sm text-gray-700 mb-2">Add stop at {pendingClick[0].toFixed(5)}, {pendingClick[1].toFixed(5)}?</div>
+            <div className="flex gap-2">
+              <button className="btn-primary" onClick={() => { setShowNameModal(true) }}>Add as Stop</button>
+              <button className="btn-secondary" onClick={() => {
+                // Set as start: replace first stop or create one
+                setStops((prev) => {
+                  const newStart: Stop = { id: `${Date.now()}`, name: 'Start', lat: pendingClick[0], lng: pendingClick[1] }
+                  let next: Stop[]
+                  if (prev.length === 0) next = [newStart]
+                  else { next = [...prev]; next[0] = { ...next[0], lat: newStart.lat, lng: newStart.lng, name: newStart.name } }
+                  setUndoAction({ type: 'add', stop: newStart, index: 0 })
+                  void refreshPreviewDistance(next)
+                  return next
+                })
+                setPendingClick(null)
+              }}>Set as Start</button>
+              <button className="btn-secondary" onClick={() => setPendingClick(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mini modal to set stop name */}
+      {showNameModal && pendingClick && (
+        <div className="absolute left-4 bottom-40 z-40">
+          <div className="overlay-panel">
+            <div className="text-sm font-medium mb-2">Name this stop</div>
+            <input className="input-field mb-3" value={newStopName} onChange={(e) => setNewStopName(e.target.value)} placeholder="e.g., Client HQ" />
+            <div className="flex gap-2">
+              <button className="btn-primary" onClick={() => {
+                const stop: Stop = { id: `${Date.now()}`, name: newStopName || 'New Stop', lat: pendingClick[0], lng: pendingClick[1] }
+                const next = [...stops, stop]
+                setStops(next)
+                setUndoAction({ type: 'add', stop, index: stops.length })
+                setShowNameModal(false)
+                setPendingClick(null)
+                setNewStopName('')
+                void refreshPreviewDistance(next)
+              }}>Save</button>
+              <button className="btn-secondary" onClick={() => { setShowNameModal(false); setPendingClick(null); setNewStopName('') }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Undo chip */}
+      {undoAction && (
+        <div className="absolute left-4 bottom-24 z-40">
+          <button className="overlay-panel px-3 py-2 text-sm" onClick={undoLast} aria-label="Undo last action">Undo</button>
+        </div>
+      )}
 
       {/* Results Panel */}
       {(optimizedOrder || totalDistanceM || totalDurationS || computeError) && (
