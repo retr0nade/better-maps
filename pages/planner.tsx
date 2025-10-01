@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import debounce from 'debounce'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+import { nominatimSearch, NominatimSuggestion as Suggestion } from '../lib/geocode'
 
 type Stop = {
   id: string
@@ -9,12 +10,6 @@ type Stop = {
   lat: number
   lng: number
   isPriority?: boolean
-}
-
-type Suggestion = {
-  display_name: string
-  lat: string
-  lon: string
 }
 
 const MapContainer = dynamic(async () => (await import('react-leaflet')).MapContainer, { ssr: false }) as any
@@ -29,6 +24,7 @@ export default function PlannerPage(): JSX.Element {
   const [drawerOpen, setDrawerOpen] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null)
+  const [activeIndex, setActiveIndex] = useState<number>(-1)
 
   const mapCenter = useMemo<[number, number]>(() => [37.773972, -122.431297], [])
   const mapRef = useRef<any>(null)
@@ -37,14 +33,16 @@ export default function PlannerPage(): JSX.Element {
     debounce(async (q: string) => {
       if (!q || q.length < 2) {
         setSuggestions([])
+        setActiveIndex(-1)
         return
       }
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`)
-        const data: Suggestion[] = await res.json()
+        const data = await nominatimSearch(q)
         setSuggestions(data)
+        setActiveIndex(data.length ? 0 : -1)
       } catch {
         setSuggestions([])
+        setActiveIndex(-1)
       }
     }, 300),
     []
@@ -60,6 +58,7 @@ export default function PlannerPage(): JSX.Element {
     setSelectedSuggestion(s)
     setQuery(s.display_name)
     setSuggestions([])
+    setActiveIndex(-1)
     const lat = parseFloat(s.lat)
     const lng = parseFloat(s.lon)
     if (mapRef.current) {
@@ -157,18 +156,39 @@ export default function PlannerPage(): JSX.Element {
             placeholder="Search places..."
             aria-label="Search places"
             className="input-field"
+            onKeyDown={(e) => {
+              if (!suggestions.length) return
+              if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setActiveIndex((i) => (i + 1) % suggestions.length)
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setActiveIndex((i) => (i - 1 + suggestions.length) % suggestions.length)
+              } else if (e.key === 'Enter') {
+                e.preventDefault()
+                if (activeIndex >= 0) handleSelectSuggestion(suggestions[activeIndex])
+              } else if (e.key === 'Escape') {
+                setSuggestions([])
+                setActiveIndex(-1)
+              }
+            }}
           />
           {suggestions.length > 0 && (
-            <div className="mt-2 max-h-60 overflow-auto rounded-md border border-gray-200 bg-white shadow">
-              {suggestions.map((s) => (
+            <div className="mt-2 max-h-60 overflow-auto rounded-md border border-gray-200 bg-white shadow" role="listbox">
+              {suggestions.map((s, idx) => (
                 <button
                   key={`${s.lat}-${s.lon}`}
                   onClick={() => handleSelectSuggestion(s)}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                  role="option"
+                  aria-selected={activeIndex === idx}
+                  className={`w-full text-left px-3 py-2 focus:outline-none ${activeIndex === idx ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
                 >
                   {s.display_name}
                 </button>
               ))}
+              <div className="px-3 py-2 text-xs text-gray-400 border-t">
+                Uses Nominatim. See usage policy: <a className="underline" href="https://operations.osmfoundation.org/policies/nominatim/" target="_blank" rel="noreferrer">policy</a>.
+              </div>
             </div>
           )}
           {selectedSuggestion && (
@@ -248,10 +268,10 @@ export default function PlannerPage(): JSX.Element {
                 <button className="btn-secondary" aria-label="Save route">Save</button>
                 <button className="btn-secondary" aria-label="Load route">Load</button>
               </div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-      </div>
 
       {/* Map Area */}
       <div className={`relative ${isFullscreen ? 'fixed inset-0 z-20' : 'container mx-auto px-4'} mt-4`}>
@@ -274,7 +294,7 @@ export default function PlannerPage(): JSX.Element {
                     <div className="text-sm">
                       <div className="font-semibold mb-1">{s.name}</div>
                       <button className="btn-secondary" onClick={() => removeStop(s.id)} aria-label="Remove stop">Remove</button>
-                    </div>
+          </div>
                   </Popup>
                 </Marker>
               ))}
