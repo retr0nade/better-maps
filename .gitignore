@@ -277,6 +277,20 @@ public
 .yarn/install-state.gz
 .pnp.*
 
+# Monorepo frontend additions (merged from bettermaps-frontend/.gitignore)
+# Yarn PnP / Berry
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Frontend misc
+*.pem
+bettermaps-frontend/next-env.d.ts
+
 # IDEs and editors
 .vscode/
 .idea/
