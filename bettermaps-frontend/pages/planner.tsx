@@ -4,7 +4,6 @@ import debounce from 'debounce'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import MapView from '../components/MapView'
 import { nominatimSearch, NominatimSuggestion as Suggestion } from '../lib/geocode'
-import debounce from 'debounce'
 
 type Stop = {
   id: string
@@ -16,7 +15,7 @@ type Stop = {
 
 // Map primitives are handled inside MapView
 
-export default function PlannerPage(): JSX.Element {
+export default function PlannerPage(): React.ReactElement {
   const [stops, setStops] = useState<Stop[]>([])
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -426,78 +425,79 @@ export default function PlannerPage(): JSX.Element {
       {!isFullscreen && (
         <div className={`fixed z-30 transition-smooth ${drawerOpen ? 'md:top-20 md:right-4 md:w-[420px] bottom-0 left-0 right-0' : 'md:top-20 md:right-4 bottom-20 right-4 w-10'}`}>
           <div className={`overlay-panel ${drawerOpen ? 'md:rounded-xl rounded-t-2xl' : 'p-0'} relative`}>
-          <button
-            aria-label={drawerOpen ? 'Collapse panel' : 'Expand panel'}
-            className="absolute -left-3 top-4 h-8 w-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center hover:bg-gray-50"
-            onClick={() => setDrawerOpen((v) => !v)}
-          >
-            {drawerOpen ? '⟶' : '⟵'}
-          </button>
+            <button
+              aria-label={drawerOpen ? 'Collapse panel' : 'Expand panel'}
+              className="absolute -left-3 top-4 h-8 w-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center hover:bg-gray-50"
+              onClick={() => setDrawerOpen((v) => !v)}
+            >
+              {drawerOpen ? '⟶' : '⟵'}
+            </button>
 
-          {drawerOpen && (
-            <div>
-              <h2 className="text-lg font-semibold mb-3">Stops</h2>
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="stops">
-                  {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
-                      {stops.map((s, idx) => (
-                        <Draggable draggableId={s.id} index={idx} key={s.id}>
-                          {(drag) => (
-                            <div
-                              ref={drag.innerRef}
-                              {...drag.draggableProps}
-                              {...drag.dragHandleProps}
-                              className="flex items-start justify-between gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm"
-                            >
-                              <div className="min-w-0">
-                                <div className="text-sm font-medium text-gray-900 truncate">{s.name}</div>
-                                <div className="text-xs text-gray-500 truncate">{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</div>
-                                <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
-                                  <input type="checkbox" checked={!!s.isPriority} onChange={() => togglePriority(s.id)} />
-                                  Priority stop
-                                </label>
+            {drawerOpen && (
+              <div>
+                <h2 className="text-lg font-semibold mb-3">Stops</h2>
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="stops">
+                    {(provided) => (
+                      <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                        {stops.map((s, idx) => (
+                          <Draggable draggableId={s.id} index={idx} key={s.id}>
+                            {(drag) => (
+                              <div
+                                ref={drag.innerRef}
+                                {...drag.draggableProps}
+                                {...drag.dragHandleProps}
+                                className="flex items-start justify-between gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm"
+                              >
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 truncate">{s.name}</div>
+                                  <div className="text-xs text-gray-500 truncate">{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</div>
+                                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                                    <input type="checkbox" checked={!!s.isPriority} onChange={() => togglePriority(s.id)} />
+                                    Priority stop
+                                  </label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button className="btn-secondary" onClick={() => removeStop(s.id)} aria-label="Remove stop">Remove</button>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <button className="btn-secondary" onClick={() => removeStop(s.id)} aria-label="Remove stop">Remove</button>
-                              </div>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
 
-              <div className="mt-4 flex gap-2">
-                <input id="manualAddress" placeholder="Add stop by address" className="input-field" aria-label="Add stop by address" />
-                <button
-                  className="btn-primary"
-                  onClick={() => {
-                    const el = document.getElementById('manualAddress') as HTMLInputElement | null
-                    if (el && el.value.trim()) {
-                      addManualStop(el.value.trim())
-                      el.value = ''
-                    }
-                  }}
-                >
-                  Add
-                </button>
-              </div>
+                <div className="mt-4 flex gap-2">
+                  <input id="manualAddress" placeholder="Add stop by address" className="input-field" aria-label="Add stop by address" />
+                  <button
+                    className="btn-primary"
+                    onClick={() => {
+                      const el = document.getElementById('manualAddress') as HTMLInputElement | null
+                      if (el && el.value.trim()) {
+                        addManualStop(el.value.trim())
+                        el.value = ''
+                      }
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
 
-              <div className="mt-4 flex gap-2">
-                <button className="btn-secondary" onClick={() => setShowSavedModal(true)} aria-label="Open saved routes">Saved routes</button>
-                <button className="btn-primary" onClick={() => setShowSavedModal(true)} aria-label="Save current route">Save</button>
+                <div className="mt-4 flex gap-2">
+                  <button className="btn-secondary" onClick={() => setShowSavedModal(true)} aria-label="Open saved routes">Saved routes</button>
+                  <button className="btn-primary" onClick={() => setShowSavedModal(true)} aria-label="Save current route">Save</button>
+                </div>
               </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Map Area */}
-      <div className={`relative ${isFullscreen ? 'fixed inset-0 z-20' : 'container mx-auto px-4'} mt-4`}>
+      <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50' : 'container mx-auto px-4'} mt-4`}>
         <div className="rounded-xl overflow-hidden bg-white shadow">
           <div className="fullmap">
             <MapView
@@ -522,7 +522,7 @@ export default function PlannerPage(): JSX.Element {
             />
           </div>
         </div>
-      )}
+      </div>
 
       {/* Floating Actions (Bottom-right) */}
       {!isFullscreen && (

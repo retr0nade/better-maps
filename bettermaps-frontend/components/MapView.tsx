@@ -7,12 +7,6 @@ const TileLayer = dynamic(async () => (await import('react-leaflet')).TileLayer,
 const Marker = dynamic(async () => (await import('react-leaflet')).Marker, { ssr: false }) as any
 const Popup = dynamic(async () => (await import('react-leaflet')).Popup, { ssr: false }) as any
 const Polyline = dynamic(async () => (await import('react-leaflet')).Polyline, { ssr: false }) as any
-// Optional clustering if installed; otherwise gracefully ignore
-let MarkerClusterGroup: any = null as any
-try {
-  // @ts-ignore
-  MarkerClusterGroup = dynamic(async () => (await import('react-leaflet-cluster')).default, { ssr: false }) as any
-} catch {}
 const useMap = (await import('react-leaflet')).useMap as unknown as () => any // will be used inside child component only
 const useMapEvents = (await import('react-leaflet')).useMapEvents as unknown as (events: any) => any
 
@@ -61,15 +55,34 @@ export default function MapView({
   onMarkerContextRemove,
   followMeEnabled,
   onToggleFollowMe,
-}: Props): JSX.Element {
+}: Props): React.ReactElement {
   const defaultCenter: LatLngTuple = initialCenter ?? [20.5937, 78.9629]
   const [mounted, setMounted] = useState(false)
   const [userPos, setUserPos] = useState<LatLngTuple | null>(null)
   const mapRef = useRef<any>(null)
   const watchIdRef = useRef<number | null>(null)
+  const [ClusterComponent, setClusterComponent] = useState<any>(null)
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Attempt to load clustering at runtime without forcing a build-time dependency
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const moduleName = 'react-leaflet-cluster'
+      // Use dynamic runtime import via Function to avoid bundler resolution
+      const dynImport: (m: string) => Promise<any> = new Function(
+        'm',
+        'return import(m)'
+      ) as any
+      dynImport(moduleName)
+        .then((mod: any) => setClusterComponent(mod?.default ?? null))
+        .catch(() => setClusterComponent(null))
+    } catch {
+      setClusterComponent(null)
+    }
   }, [])
 
   // Geolocation request on mount
@@ -151,9 +164,9 @@ export default function MapView({
             </Marker>
           )}
 
-          {/* Stops markers with optional clustering */}
-          {MarkerClusterGroup ? (
-            <MarkerClusterGroup chunkedLoading>
+          {/* Stops markers with optional runtime clustering */}
+          {ClusterComponent ? (
+            <ClusterComponent chunkedLoading>
               {stops.map((s, idx) => (
                 <Marker
                   key={s.id ?? `${s.lat},${s.lng}-${idx}`}
@@ -174,7 +187,7 @@ export default function MapView({
                   </Popup>
                 </Marker>
               ))}
-            </MarkerClusterGroup>
+            </ClusterComponent>
           ) : (
             stops.map((s, idx) => (
               <Marker
@@ -218,50 +231,3 @@ export default function MapView({
     </div>
   )
 }
-
-import React, { useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
-
-// Dynamically import the map component to avoid SSR issues
-const MapComponent = dynamic(() => import('./MapComponent'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-96 bg-gray-200 rounded-lg flex items-center justify-center">
-      <p className="text-gray-500">Loading map...</p>
-    </div>
-  )
-});
-
-interface Location {
-  lat: number;
-  lng: number;
-  name: string;
-}
-
-interface OptimizedRoute {
-  order: number[];
-  total_distance: number;
-}
-
-interface MapViewProps {
-  locations: Location[];
-  optimizedRoute: OptimizedRoute | null;
-}
-
-const MapView: React.FC<MapViewProps> = ({ locations, optimizedRoute }) => {
-  if (locations.length === 0) {
-    return (
-      <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-        <p className="text-gray-500">Add locations to see them on the map</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-96 rounded-lg overflow-hidden">
-      <MapComponent locations={locations} optimizedRoute={optimizedRoute} />
-    </div>
-  );
-};
-
-export default MapView;

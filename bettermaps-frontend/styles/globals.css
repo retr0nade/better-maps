@@ -1,149 +1,22 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Use the same Tailwind v4 stylesheet as the app router */
+@import "../src/app/globals.css";
 
-/* Custom styles for Better Maps */
+/* ---- App-level additions for pages router ---- */
 
-/* Page transition */
-.page-fade {
-  animation: fadeIn 0.25s ease-out;
-}
-
-/* Leaflet map container fixes */
-.leaflet-container {
-  height: 100%;
-  width: 100%;
-  z-index: 1;
-}
-
-/* Fill viewport height for map below a ~72px navbar */
+/* Fill viewport height minus navbar (adjust 72px if navbar height changes) */
 .fullmap {
   height: calc(100vh - 72px);
 }
 
-/* Custom scrollbar for better UX */
-::-webkit-scrollbar {
-  width: 8px;
+/* Subtle page fade/slide for route transitions */
+.page-fade {
+  animation: pageFadeIn 250ms ease forwards;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Smooth transitions for interactive elements */
-.transition-smooth {
-  transition: all 0.3s ease-in-out;
-}
-
-/* Custom button styles */
-.btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition duration-300;
-}
-
-.btn-secondary {
-  @apply bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded transition duration-300;
-}
-
-.btn-success {
-  @apply bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition duration-300;
-}
-
-.btn-danger {
-  @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition duration-300;
-}
-
-/* Form input styles */
-.input-field {
-  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
-}
-
-/* Card styles */
-.card {
-  @apply bg-white rounded-lg shadow-md p-6;
-}
-
-.card-header {
-  @apply border-b border-gray-200 pb-4 mb-4;
-}
-
-/* Loading spinner */
-.spinner {
-  @apply animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600;
-}
-
-/* Map marker popup customizations */
-.leaflet-popup-content {
-  margin: 8px 12px;
-  line-height: 1.4;
-  font-size: 13px;
-}
-
-.leaflet-popup-content-wrapper {
-  border-radius: 8px;
-}
-
-/* Responsive design helpers */
-@media (max-width: 768px) {
-  .mobile-stack {
-    @apply flex-col space-y-4;
-  }
-  
-  .mobile-full {
-    @apply w-full;
-  }
-}
-
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-  
-  .print-break {
-    page-break-before: always;
-  }
-}
-
-/* Dark mode support (if needed in future) */
-@media (prefers-color-scheme: dark) {
-  .dark-mode {
-    @apply bg-gray-900 text-white;
-  }
-}
-
-/* Accessibility improvements */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Focus styles for better accessibility */
-.focus-visible:focus {
-  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
-}
-
-/* Custom animations */
-@keyframes fadeIn {
+@keyframes pageFadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -151,68 +24,48 @@
   }
 }
 
-.fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Animated background */
+/* Animated soft gradient background used by the root container */
 .bg-animated {
-  background-size: 200% 200%;
-  animation: bgShift 12s ease-in-out infinite;
+  background-size: 400% 400%;
+  animation: gradientShift 24s ease infinite;
 }
 
-@keyframes bgShift {
+@keyframes gradientShift {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-/* Map route line styles */
-.route-line {
-  stroke-width: 4;
-  stroke-opacity: 0.8;
-  fill: none;
-}
-
-.route-line-optimized {
-  stroke: #10b981;
-}
-
-.route-line-default {
-  stroke: #6b7280;
-}
-
-/* Status indicators */
-.status-success {
-  @apply bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded;
-}
-
-.status-error {
-  @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded;
-}
-
-.status-warning {
-  @apply bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded;
-}
-
-.status-info {
-  @apply bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded;
-}
-
-/* Overlay panels */
+/* Overlay panels (cards over map) */
 .overlay-panel {
-  @apply bg-white/90 backdrop-blur rounded-xl shadow-lg p-4 border border-gray-100;
+  /* Tailwind via @apply for consistent design system */
+  @apply bg-white/80 backdrop-blur-md rounded-xl shadow-xl border border-white/40 p-4;
+}
+.overlay-panel-dark {
+  @apply bg-slate-900/70 text-slate-100 backdrop-blur-md rounded-xl shadow-xl border border-slate-700 p-4;
 }
 
-/* Floating Action Button */
+/* Floating action button helpers */
 .fab {
-  @apply fixed z-40 rounded-full shadow-lg bg-blue-600 text-white h-12 w-12 flex items-center justify-center hover:bg-blue-700 transition-smooth;
+  @apply fixed z-40 inline-flex items-center justify-center rounded-full shadow-lg transition-transform active:scale-95 w-14 h-14;
 }
+.fab-primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
+.fab-secondary { @apply bg-white text-blue-700 ring-1 ring-blue-200 hover:ring-blue-300; }
+.fab-br { @apply bottom-6 right-6 w-14 h-14; }
+.fab-bl { @apply bottom-6 left-6 w-14 h-14; }
 
-.fab-secondary {
-  @apply bg-gray-700 hover:bg-gray-800;
-}
+/* Small UI animations/utilities */
+.hover-lift { @apply transition-transform duration-200 hover:-translate-y-0.5; }
+.soft-shadow { @apply shadow-lg shadow-slate-900/5; }
+.rounded-soft { @apply rounded-xl; }
 
+/* Container for stacked FABs (bottom-right) */
 .fab-container {
-  @apply fixed bottom-6 right-6 space-y-3 flex flex-col items-end;
+  position: fixed;
+  right: 1.5rem; /* 24px */
+  bottom: 1.5rem; /* 24px */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 40;
 }

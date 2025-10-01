@@ -1,3 +1,180 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
+
+export type RouteStop = {
+  id: string
+  name: string
+  lat: number
+  lng: number
+  isPriority?: boolean
+}
+
+type Props = {
+  value: RouteStop[]
+  onChange?: (stops: RouteStop[], priorityIndices: number[]) => void
+  onOpenSearchModal?: () => void
+  onRequestMatrixPreview?: (stops: RouteStop[]) => Promise<number | null>
+}
+
+export default function RouteForm({ value, onChange, onOpenSearchModal, onRequestMatrixPreview }: Props): React.ReactElement {
+  const [stops, setStops] = useState<RouteStop[]>(value)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [previewKm, setPreviewKm] = useState<number | null>(null)
+
+  useEffect(() => {
+    setStops(value)
+  }, [value])
+
+  const priorityIndices = useMemo(() => stops.map((s, i) => (s.isPriority ? i : -1)).filter((i) => i >= 0), [stops])
+
+  useEffect(() => {
+    onChange?.(stops, priorityIndices)
+  }, [stops, priorityIndices, onChange])
+
+  const validateLatLng = (latStr: string, lngStr: string) => {
+    const lat = Number(latStr)
+    const lng = Number(lngStr)
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) return 'Latitude must be between -90 and 90'
+    if (!Number.isFinite(lng) || lng < -180 || lng > 180) return 'Longitude must be between -180 and 180'
+    return null
+  }
+
+  const onDragEnd = async (result: DropResult) => {
+    if (!result.destination) return
+    const next = Array.from(stops)
+    const [removed] = next.splice(result.source.index, 1)
+    next.splice(result.destination.index, 0, removed)
+    setStops(next)
+    if (onRequestMatrixPreview) {
+      try {
+        const km = await onRequestMatrixPreview(next)
+        setPreviewKm(km)
+      } catch {
+        setPreviewKm(null)
+      }
+    }
+  }
+
+  const updateStopField = (idx: number, field: keyof RouteStop, value: string | boolean) => {
+    setStops((prev) => {
+      const next = [...prev]
+      const target = { ...next[idx] }
+      if (field === 'lat' || field === 'lng') {
+        const latStr = field === 'lat' ? String(value) : String(target.lat)
+        const lngStr = field === 'lng' ? String(value) : String(target.lng)
+        const err = validateLatLng(latStr, lngStr)
+        setErrors((e) => ({ ...e, [target.id]: err ?? '' }))
+        ;(target as any)[field] = Number(value)
+      } else if (field === 'isPriority') {
+        (target as any)[field] = Boolean(value)
+      } else if (field === 'name') {
+        (target as any)[field] = String(value)
+      }
+      next[idx] = target
+      return next
+    })
+  }
+
+  const removeStop = (idx: number) => {
+    setStops((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  const tooManyStops = stops.length > 12
+
+  return (
+    <div className="space-y-4">
+      {tooManyStops && (
+        <div className="status-warning">You have more than 12 stops. Consider splitting into multiple routes for best performance.</div>
+      )}
+
+      <div className="card">
+        <div className="card-header">
+          <h3 className="text-lg font-semibold">Start</h3>
+        </div>
+        {stops[0] ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium mb-1">Name</label>
+              <input className="input-field" value={stops[0].name} onChange={(e) => updateStopField(0, 'name', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Lat</label>
+              <input className="input-field" value={stops[0].lat} onChange={(e) => updateStopField(0, 'lat', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Lng</label>
+              <input className="input-field" value={stops[0].lng} onChange={(e) => updateStopField(0, 'lng', e.target.value)} />
+            </div>
+            {errors[stops[0].id] && <div className="text-sm text-red-600 md:col-span-3">{errors[stops[0].id]}</div>}
+          </div>
+        ) : (
+          <div className="text-sm text-gray-600">No start set. Click on the map or search to add your start.</div>
+        )}
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h3 className="text-lg font-semibold">Stops</h3>
+        </div>
+
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="route-stops">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-3">
+                {stops.slice(1).map((s, i) => {
+                  const idx = i + 1
+                  return (
+                    <Draggable draggableId={s.id} index={i} key={s.id}>
+                      {(drag) => (
+                        <div ref={drag.innerRef} {...drag.draggableProps} className="p-3 border rounded-lg bg-white shadow-sm">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span {...drag.dragHandleProps} aria-label="Drag handle" className="cursor-grab select-none text-gray-400">≡</span>
+                                <input className="input-field" value={s.name} onChange={(e) => updateStopField(idx, 'name', e.target.value)} />
+                              </div>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">Lat</label>
+                                  <input className="input-field" value={s.lat} onChange={(e) => updateStopField(idx, 'lat', e.target.value)} />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">Lng</label>
+                                  <input className="input-field" value={s.lng} onChange={(e) => updateStopField(idx, 'lng', e.target.value)} />
+                                </div>
+                                <label className="inline-flex items-center gap-2 text-sm md:col-span-2">
+                                  <input type="checkbox" checked={!!s.isPriority} onChange={(e) => updateStopField(idx, 'isPriority', e.target.checked)} />
+                                  Priority
+                                </label>
+                              </div>
+                              {errors[s.id] && <div className="text-sm text-red-600 mt-2">{errors[s.id]}</div>}
+                            </div>
+                            <div className="flex items-center">
+                              <button className="btn-danger" onClick={() => removeStop(idx)} aria-label="Remove stop">Remove</button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  )
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button className="btn-primary" onClick={onOpenSearchModal} aria-label="Add stop via search">Add Stop</button>
+          {typeof previewKm === 'number' && (
+            <span className="text-sm text-gray-600">Preview distance: {previewKm.toFixed(2)} km</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 import React, { useMemo, useRef, useState } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Bars3Icon, TrashIcon } from '@heroicons/react/24/outline'
