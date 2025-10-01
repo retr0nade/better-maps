@@ -144,6 +144,12 @@ const PlannerPage: React.FC = () => {
             <RouteForm 
               locations={locations}
               onLocationsUpdate={handleLocationsUpdate}
+              onComputed={({ locations: locs, distanceMatrix: matrix, optimizedRoute: opt }) => {
+                setLocations(locs);
+                setDistanceMatrix({ matrix });
+                setOptimizedRoute(opt);
+                setError(null);
+              }}
             />
 
             <div className="bg-white rounded-lg shadow-md p-6">
