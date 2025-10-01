@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-import RouteForm from '../components/RouteForm';
-import MapView from '../components/MapView';
-import DistanceTable from '../components/DistanceTable';
+export { }
+// The planner implementation was rebuilt at repo root pages/planner.tsx.
+// For the app under bettermaps-frontend, please use the new planner in the root app
+// or mirror the full implementation here as needed.
+export default function Placeholder() { return null }
 
 interface Location {
   lat: number;
