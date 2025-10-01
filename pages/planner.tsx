@@ -16,6 +16,7 @@ const MapContainer = dynamic(async () => (await import('react-leaflet')).MapCont
 const TileLayer = dynamic(async () => (await import('react-leaflet')).TileLayer, { ssr: false }) as any
 const Marker = dynamic(async () => (await import('react-leaflet')).Marker, { ssr: false }) as any
 const Popup = dynamic(async () => (await import('react-leaflet')).Popup, { ssr: false }) as any
+const Polyline = dynamic(async () => (await import('react-leaflet')).Polyline, { ssr: false }) as any
 
 export default function PlannerPage(): JSX.Element {
   const [stops, setStops] = useState<Stop[]>([])
@@ -25,6 +26,11 @@ export default function PlannerPage(): JSX.Element {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null)
   const [activeIndex, setActiveIndex] = useState<number>(-1)
+  const [optimizedOrder, setOptimizedOrder] = useState<number[] | null>(null)
+  const [totalDistanceM, setTotalDistanceM] = useState<number | null>(null)
+  const [totalDurationS, setTotalDurationS] = useState<number | null>(null)
+  const [routePolyline, setRoutePolyline] = useState<[number, number][]>([])
+  const [computeError, setComputeError] = useState<string | null>(null)
 
   const mapCenter = useMemo<[number, number]>(() => [37.773972, -122.431297], [])
   const mapRef = useRef<any>(null)
@@ -116,22 +122,50 @@ export default function PlannerPage(): JSX.Element {
   }
 
   const computeRoute = async () => {
-    // Optional backend integration; safely ignore if unreachable
+    setComputeError(null)
+    setRoutePolyline([])
+    setOptimizedOrder(null)
+    setTotalDistanceM(null)
+    setTotalDurationS(null)
     if (stops.length < 2) return
+
+    // 1) Collect current order as locations (treat first as start for now)
+    const locations = stops.map((s) => ({ lat: s.lat, lng: s.lng }))
+
+    // 2) Priority indices in current order
+    const priority = stops.map((s, i) => (s.isPriority ? i : -1)).filter((i) => i >= 0)
+
     try {
-      const response = await fetch('http://localhost:8000/optimize-route', {
+      // 3) Call backend optimizer
+      const res = await fetch('http://127.0.0.1:8000/optimize-route', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          waypoints: stops.map((s) => ({ lat: s.lat, lng: s.lng })),
-          priority: stops.map((s, i) => (s.isPriority ? i : -1)).filter((i) => i >= 0),
-        }),
+        body: JSON.stringify({ locations, priority }),
       })
-      if (response.ok) {
-        // In a full implementation, reorder stops based on returned order
-        // const data = await response.json()
+      if (!res.ok) throw new Error('Optimization failed')
+      const data = await res.json()
+      const order: number[] = data.optimized_order
+      const totalM: number | undefined = data.total_distance_m
+      setOptimizedOrder(order)
+      if (typeof totalM === 'number') setTotalDistanceM(totalM)
+
+      // 4) Build OSRM coordinates string in lng,lat order using optimized order
+      const orderedPoints = order.map((idx) => locations[idx])
+      const coords = orderedPoints.map((p) => `${p.lng},${p.lat}`).join(';')
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=false` 
+
+      const osrmRes = await fetch(osrmUrl)
+      if (!osrmRes.ok) throw new Error('OSRM request failed')
+      const osrm = await osrmRes.json()
+      const route = osrm?.routes?.[0]
+      if (route?.geometry?.coordinates) {
+        const latlngs: [number, number][] = route.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]])
+        setRoutePolyline(latlngs)
       }
-    } catch {}
+      if (typeof route?.duration === 'number') setTotalDurationS(route.duration)
+    } catch (e) {
+      setComputeError('Could not compute optimized route. Using current order. You can still navigate or try again later.')
+    }
   }
 
   const exportShare = () => {
@@ -298,6 +332,9 @@ export default function PlannerPage(): JSX.Element {
                   </Popup>
                 </Marker>
               ))}
+              {routePolyline.length > 1 && (
+                <Polyline positions={routePolyline} pathOptions={{ color: '#2563eb', weight: 4, opacity: 0.85 }} />
+              )}
             </MapContainer>
           </div>
         </div>
@@ -315,6 +352,43 @@ export default function PlannerPage(): JSX.Element {
           ↗
         </button>
       </div>
+
+      {/* Results Panel */}
+      {(optimizedOrder || totalDistanceM || totalDurationS || computeError) && (
+        <div className="absolute left-4 bottom-28 z-30 max-w-md">
+          <div className="overlay-panel">
+            {computeError && <div className="status-warning mb-3">{computeError}</div>}
+            <div className="flex items-center gap-4 text-sm text-gray-700">
+              {typeof totalDistanceM === 'number' && (
+                <span><strong>Distance:</strong> {(totalDistanceM / 1000).toFixed(2)} km</span>
+              )}
+              {typeof totalDurationS === 'number' && (
+                <span><strong>Duration:</strong> {Math.round(totalDurationS / 60)} min</span>
+              )}
+            </div>
+            {optimizedOrder && (
+              <div className="mt-3">
+                <div className="text-sm font-medium mb-2">Sequence</div>
+                <ol className="space-y-1 text-sm">
+                  {optimizedOrder.map((idx, i) => (
+                    <li key={`${idx}-${i}`}>
+                      <button
+                        className="underline hover:text-blue-600"
+                        onClick={() => {
+                          const p = stops[idx]
+                          if (p && mapRef.current?.setView) mapRef.current.setView([p.lat, p.lng], 14)
+                        }}
+                      >
+                        {i + 1}. {stops[idx]?.name ?? `${stops[idx]?.lat?.toFixed?.(4)}, ${stops[idx]?.lng?.toFixed?.(4)}`}
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
