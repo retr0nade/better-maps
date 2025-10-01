@@ -34,6 +34,9 @@ export default function PlannerPage(): JSX.Element {
   const [previewKm, setPreviewKm] = useState<number | null>(null)
   const [undoAction, setUndoAction] = useState<{ type: 'add' | 'remove'; stop: Stop; index: number } | null>(null)
   const [showSearch, setShowSearch] = useState(true)
+  const [showSavedModal, setShowSavedModal] = useState(false)
+  const [saveName, setSaveName] = useState('')
+  const [savedRoutes, setSavedRoutes] = useState<Array<{ id: string; name: string; stops: Stop[] }>>([])
 
   const mapCenter = useMemo<[number, number]>(() => [37.773972, -122.431297], [])
   const mapRef = useRef<any>(null)
@@ -264,6 +267,81 @@ export default function PlannerPage(): JSX.Element {
     })
   }
 
+  // Saved routes helpers
+  const STORAGE_KEY = 'bettermaps_saved_routes'
+  const refreshSavedRoutes = () => {
+    if (typeof window === 'undefined') return
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY)
+      if (raw) setSavedRoutes(JSON.parse(raw))
+      else setSavedRoutes([])
+    } catch {
+      setSavedRoutes([])
+    }
+  }
+
+  const persistSavedRoutes = (routes: Array<{ id: string; name: string; stops: Stop[] }>) => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(routes))
+    setSavedRoutes(routes)
+  }
+
+  const openSavedModal = () => {
+    refreshSavedRoutes()
+    setSaveName('')
+    setShowSavedModal(true)
+  }
+
+  const saveCurrentRoute = () => {
+    const name = saveName.trim() || `Route ${new Date().toLocaleString()}`
+    const newItem = { id: `${Date.now()}`, name, stops }
+    const next = [...savedRoutes, newItem]
+    persistSavedRoutes(next)
+    setSaveName('')
+  }
+
+  const deleteSavedRoute = (id: string) => {
+    const next = savedRoutes.filter((r) => r.id !== id)
+    persistSavedRoutes(next)
+  }
+
+  const loadSavedRoute = (id: string) => {
+    const r = savedRoutes.find((x) => x.id === id)
+    if (!r) return
+    setStops(r.stops)
+    void refreshPreviewDistance(r.stops)
+    setShowSavedModal(false)
+  }
+
+  // Exports
+  const exportAsJson = () => {
+    try {
+      const payload = { stops }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'route.json'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {}
+  }
+
+  const copyShareLink = async () => {
+    if (typeof window === 'undefined') return
+    try {
+      const json = JSON.stringify({ stops })
+      const base64 = btoa(unescape(encodeURIComponent(json)))
+      const link = `${window.location.origin}/share?data=${base64}`
+      await navigator.clipboard.writeText(link)
+      setComputeError('Share link copied to clipboard.')
+      setTimeout(() => setComputeError(null), 2000)
+    } catch {
+      setComputeError('Could not copy share link.')
+      setTimeout(() => setComputeError(null), 2000)
+    }
+  }
+
   return (
     <div className={`min-h-screen ${isFullscreen ? '' : 'relative'}`}>
       {/* Search Bar (Top-left) */}
@@ -387,8 +465,8 @@ export default function PlannerPage(): JSX.Element {
               </div>
 
               <div className="mt-4 flex gap-2">
-                <button className="btn-secondary" aria-label="Save route">Save</button>
-                <button className="btn-secondary" aria-label="Load route">Load</button>
+                <button className="btn-secondary" onClick={() => setShowSavedModal(true)} aria-label="Open saved routes">Saved routes</button>
+                <button className="btn-primary" onClick={() => setShowSavedModal(true)} aria-label="Save current route">Save</button>
               </div>
                   </div>
                 )}
@@ -528,8 +606,52 @@ export default function PlannerPage(): JSX.Element {
                     </li>
                   ))}
                 </ol>
+                <div className="mt-3 flex gap-2">
+                  <button className="btn-secondary" onClick={exportAsJson} aria-label="Download route as JSON">Download JSON</button>
+                  <button className="btn-secondary" onClick={copyShareLink} aria-label="Copy share link">Copy Share Link</button>
+                </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Saved Routes Modal */}
+      {showSavedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/20" onClick={() => setShowSavedModal(false)} />
+          <div className="overlay-panel relative max-w-lg w-[92vw]">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">Saved routes</h3>
+              <button className="btn-secondary" onClick={() => setShowSavedModal(false)} aria-label="Close saved routes">Close</button>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Save current as</label>
+              <div className="flex gap-2">
+                <input className="input-field" value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="Route name" />
+                <button className="btn-primary" onClick={saveCurrentRoute} aria-label="Save current route">Save</button>
+              </div>
+            </div>
+            <div className="max-h-64 overflow-auto">
+              {savedRoutes.length === 0 ? (
+                <div className="text-sm text-gray-500">No saved routes yet.</div>
+              ) : (
+                <ul className="space-y-2">
+                  {savedRoutes.map((r) => (
+                    <li key={r.id} className="flex items-center justify-between border border-gray-200 rounded p-2">
+                      <div>
+                        <div className="text-sm font-medium">{r.name}</div>
+                        <div className="text-xs text-gray-500">{r.stops.length} stops</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button className="btn-primary" onClick={() => loadSavedRoute(r.id)} aria-label={`Load route ${r.name}`}>Load</button>
+                        <button className="btn-secondary" onClick={() => deleteSavedRoute(r.id)} aria-label={`Delete route ${r.name}`}>Delete</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       )}
