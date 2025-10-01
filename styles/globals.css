@@ -4,11 +4,21 @@
 
 /* Custom styles for Better Maps */
 
+/* Page transition */
+.page-fade {
+  animation: fadeIn 0.25s ease-out;
+}
+
 /* Leaflet map container fixes */
 .leaflet-container {
   height: 100%;
   width: 100%;
   z-index: 1;
+}
+
+/* Fill viewport height for map below a ~72px navbar */
+.fullmap {
+  height: calc(100vh - 72px);
 }
 
 /* Custom scrollbar for better UX */
@@ -145,6 +155,18 @@
   animation: fadeIn 0.3s ease-out;
 }
 
+/* Animated background */
+.bg-animated {
+  background-size: 200% 200%;
+  animation: bgShift 12s ease-in-out infinite;
+}
+
+@keyframes bgShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* Map route line styles */
 .route-line {
   stroke-width: 4;
@@ -175,4 +197,22 @@
 
 .status-info {
   @apply bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded;
+}
+
+/* Overlay panels */
+.overlay-panel {
+  @apply bg-white/90 backdrop-blur rounded-xl shadow-lg p-4 border border-gray-100;
+}
+
+/* Floating Action Button */
+.fab {
+  @apply fixed z-40 rounded-full shadow-lg bg-blue-600 text-white h-12 w-12 flex items-center justify-center hover:bg-blue-700 transition-smooth;
+}
+
+.fab-secondary {
+  @apply bg-gray-700 hover:bg-gray-800;
+}
+
+.fab-container {
+  @apply fixed bottom-6 right-6 space-y-3 flex flex-col items-end;
 }
