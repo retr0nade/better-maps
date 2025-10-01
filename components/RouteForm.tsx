@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { Bars3Icon, TrashIcon } from '@heroicons/react/24/outline'
+import debounce from 'debounce'
+import { nominatimSearch, NominatimSuggestion } from '../lib/geocode'
 
 export type RouteStop = {
   id: string
@@ -25,6 +27,13 @@ export default function RouteForm({ start, stops: externalStops, onChange, onOpe
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [previewKm, setPreviewKm] = useState<number | null>(null)
   const maxStops = 12
+
+  // Inline suggestion state per stop id
+  const [stopQueries, setStopQueries] = useState<Record<string, string>>({})
+  const [stopSuggestions, setStopSuggestions] = useState<Record<string, NominatimSuggestion[]>>({})
+  const [stopActiveIndex, setStopActiveIndex] = useState<Record<string, number>>({})
+  const [stopNameErrors, setStopNameErrors] = useState<Record<string, string>>({})
+  const debouncedSearchRef = useRef<((id: string, q: string) => void) | null>(null)
 
   const priorityIndices = useMemo(() => localStops.map((s, i) => (s.isPriority ? i : -1)).filter((v) => v >= 0), [localStops])
 
@@ -129,6 +138,58 @@ export default function RouteForm({ start, stops: externalStops, onChange, onOpe
     }
   }
 
+  // Debounced search initializer
+  if (!debouncedSearchRef.current) {
+    debouncedSearchRef.current = debounce(async (id: string, q: string) => {
+      if (!q || q.trim().length < 2) {
+        setStopSuggestions((m) => ({ ...m, [id]: [] }))
+        setStopActiveIndex((m) => ({ ...m, [id]: -1 }))
+        return
+      }
+      try {
+        const results = await nominatimSearch(q)
+        setStopSuggestions((m) => ({ ...m, [id]: results }))
+        setStopActiveIndex((m) => ({ ...m, [id]: results.length ? 0 : -1 }))
+      } catch {
+        setStopSuggestions((m) => ({ ...m, [id]: [] }))
+        setStopActiveIndex((m) => ({ ...m, [id]: -1 }))
+      }
+    }, 300)
+  }
+
+  const handleStopNameInput = (idx: number, id: string, value: string) => {
+    // update display name locally as the user types
+    handleStopChange(idx, 'name', value)
+    setStopQueries((m) => ({ ...m, [id]: value }))
+    debouncedSearchRef.current?.(id, value)
+  }
+
+  const selectSuggestionForStop = (idx: number, id: string, s: NominatimSuggestion) => {
+    const lat = parseFloat(s.lat)
+    const lng = parseFloat(s.lon)
+    handleStopChange(idx, 'name', s.display_name)
+    handleStopChange(idx, 'lat', String(lat))
+    handleStopChange(idx, 'lng', String(lng))
+    setStopSuggestions((m) => ({ ...m, [id]: [] }))
+    setStopActiveIndex((m) => ({ ...m, [id]: -1 }))
+    setStopNameErrors((m) => ({ ...m, [id]: '' }))
+  }
+
+  const confirmTypedStop = async (idx: number, id: string) => {
+    const typed = stopQueries[id] ?? localStops[idx]?.name
+    if (!typed || !typed.trim()) return
+    try {
+      const results = await nominatimSearch(typed)
+      if (results && results[0]) {
+        selectSuggestionForStop(idx, id, results[0])
+      } else {
+        setStopNameErrors((m) => ({ ...m, [id]: 'Could not geocode this address.' }))
+      }
+    } catch {
+      setStopNameErrors((m) => ({ ...m, [id]: 'Could not geocode this address.' }))
+    }
+  }
+
   return (
     <div className="overlay-panel">
       <div className="flex items-center justify-between mb-4">
@@ -212,7 +273,63 @@ export default function RouteForm({ start, stops: externalStops, onChange, onOpe
                         </div>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <input className="input-field" value={s.name} onChange={(e) => handleStopChange(idx, 'name', e.target.value)} placeholder="Name or address" />
+                        <div className="relative">
+                          <input
+                            className="input-field"
+                            value={stopQueries[s.id] ?? s.name}
+                            onChange={(e) => handleStopNameInput(idx, s.id, e.target.value)}
+                            placeholder="Name or address"
+                            onKeyDown={(e) => {
+                              const list = stopSuggestions[s.id] ?? []
+                              const active = stopActiveIndex[s.id] ?? -1
+                              if (e.key === 'ArrowDown' && list.length) {
+                                e.preventDefault()
+                                const next = (active + 1) % list.length
+                                setStopActiveIndex((m) => ({ ...m, [s.id]: next }))
+                              } else if (e.key === 'ArrowUp' && list.length) {
+                                e.preventDefault()
+                                const next = (active - 1 + list.length) % list.length
+                                setStopActiveIndex((m) => ({ ...m, [s.id]: next }))
+                              } else if (e.key === 'Enter') {
+                                e.preventDefault()
+                                if (active >= 0 && list[active]) {
+                                  selectSuggestionForStop(idx, s.id, list[active])
+                                } else {
+                                  void confirmTypedStop(idx, s.id)
+                                }
+                              } else if (e.key === 'Escape') {
+                                setStopSuggestions((m) => ({ ...m, [s.id]: [] }))
+                                setStopActiveIndex((m) => ({ ...m, [s.id]: -1 }))
+                              }
+                            }}
+                            aria-autocomplete="list"
+                            aria-expanded={(stopSuggestions[s.id]?.length ?? 0) > 0}
+                            aria-controls={`suggestions-${s.id}`}
+                            aria-activedescendant={
+                              (stopActiveIndex[s.id] ?? -1) >= 0 ? `option-${s.id}-${stopActiveIndex[s.id]}` : undefined
+                            }
+                          />
+                          {stopNameErrors[s.id] && <p className="text-xs text-red-600 mt-1">{stopNameErrors[s.id]}</p>}
+                          {(stopSuggestions[s.id]?.length ?? 0) > 0 && (
+                            <div id={`suggestions-${s.id}`} className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-200 bg-white shadow" role="listbox">
+                              {(stopSuggestions[s.id] ?? []).map((sg, i) => (
+                                <button
+                                  key={`${sg.lat}-${sg.lon}-${i}`}
+                                  id={`option-${s.id}-${i}`}
+                                  role="option"
+                                  aria-selected={(stopActiveIndex[s.id] ?? -1) === i}
+                                  onClick={() => selectSuggestionForStop(idx, s.id, sg)}
+                                  className={`w-full text-left px-3 py-2 text-sm focus:outline-none ${((stopActiveIndex[s.id] ?? -1) === i) ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                                >
+                                  <div className="font-medium truncate">{sg.display_name}</div>
+                                  {sg.address && (
+                                    <div className="text-xs text-gray-500 truncate">{Object.values(sg.address).slice(0, 3).join(', ')}</div>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <div>
                           <input className="input-field" defaultValue={s.lat} onBlur={(e) => handleStopChange(idx, 'lat', e.target.value)} placeholder="Lat" />
                           {errors[`stop.${idx}.lat`] && <p className="text-xs text-red-600 mt-1">{errors[`stop.${idx}.lat`]}</p>}
