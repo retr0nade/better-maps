@@ -8,7 +8,11 @@ const Particles = dynamic(async () => {
   return mod.default ?? mod.Particles
 }, { ssr: false }) as unknown as React.ComponentType<any>
 
-export default function AnimatedHero(): JSX.Element {
+interface AnimatedHeroProps {
+  darkMode?: boolean
+}
+
+export default function AnimatedHero({ darkMode = false }: AnimatedHeroProps): JSX.Element {
   const particleOptions = {
     fpsLimit: 30,
     background: { color: 'transparent' },
@@ -32,10 +36,14 @@ export default function AnimatedHero(): JSX.Element {
     <section className="relative overflow-hidden py-16 md:py-24">
       <div className="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
         <div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-4">
+          <h1 className={`text-4xl md:text-5xl font-extrabold tracking-tight mb-4 ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}>
             BetterMaps — Optimize Your Multi-Stop Routes
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-xl">
+          <p className={`text-lg md:text-xl mb-8 max-w-xl ${
+            darkMode ? 'text-gray-200' : 'text-gray-700'
+          }`}>
             Plan, analyze, and optimize complex routes with ease. Visualize distances, prioritize stops, and export to navigation.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -57,13 +65,19 @@ export default function AnimatedHero(): JSX.Element {
         </div>
 
         <div className="relative h-72 md:h-96">
-          <div className="absolute inset-0 right-0 rounded-2xl overlay-panel">
+          <div className={`absolute inset-0 right-0 rounded-2xl backdrop-blur-md shadow-xl border p-4 ${
+            darkMode 
+              ? 'bg-gray-800/70 border-gray-700'
+              : 'bg-white/80 border-white/40'
+          }`}>
             <div className="absolute inset-0 rounded-2xl overflow-hidden">
               <div className="absolute inset-0 hidden lg:block">
                 <Particles id="heroParticles" options={particleOptions} />
               </div>
               <div className="absolute inset-0 flex items-center justify-center p-8">
-                <div className="rounded-xl bg-white/80 backdrop-blur shadow-md p-4 md:p-6">
+                <div className={`rounded-xl backdrop-blur shadow-md p-4 md:p-6 ${
+                  darkMode ? 'bg-gray-700/80' : 'bg-white/80'
+                }`}>
                   <svg
                     width="120"
                     height="120"
@@ -73,7 +87,7 @@ export default function AnimatedHero(): JSX.Element {
                     role="img"
                     aria-label="Globe illustration"
                   >
-                    <circle cx="60" cy="60" r="56" stroke="#60a5fa" strokeWidth="2" fill="#eff6ff" />
+                    <circle cx="60" cy="60" r="56" stroke="#60a5fa" strokeWidth="2" fill={darkMode ? '#374151' : '#eff6ff'} />
                     <path d="M4 60h112" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" />
                     <path d="M60 4v112" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" />
                     <ellipse cx="60" cy="60" rx="40" ry="18" stroke="#38bdf8" strokeWidth="1.5" fill="none" />

@@ -58,7 +58,7 @@ const DistanceTable: React.FC<DistanceTableProps> = ({
                     key={toIndex}
                     className={`border border-gray-300 px-4 py-2 text-center ${
                       fromIndex === toIndex 
-                        ? 'bg-gray-100 text-gray-500' 
+                        ? 'bg-gray-100 text-gray-600' 
                         : 'text-gray-900'
                     }`}
                   >

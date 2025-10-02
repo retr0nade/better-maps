@@ -13,10 +13,16 @@ function SocialLink({ href, label, children }: { href: string; label: string; ch
   )
 }
 
-export default function Footer(): React.ReactElement {
+interface FooterProps {
+  darkMode?: boolean
+}
+
+export default function Footer({ darkMode = false }: FooterProps): React.ReactElement {
   const year = new Date().getFullYear()
   return (
-    <footer className="mt-16 bg-gray-900 text-gray-300">
+    <footer className={`mt-16 ${
+      darkMode ? 'bg-gray-900 text-gray-200' : 'bg-gray-900 text-gray-300'
+    }`}>
       <div className="container mx-auto px-4 py-10">
         <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
           <div>
@@ -24,7 +30,9 @@ export default function Footer(): React.ReactElement {
               <div className="h-7 w-7 rounded-md bg-blue-600 text-white flex items-center justify-center text-sm font-bold">BM</div>
               <span className="text-white font-semibold">BetterMaps</span>
             </div>
-            <p className="text-sm text-gray-400">Optimize your multi-stop routes.</p>
+            <p className={`text-sm ${
+              darkMode ? 'text-gray-200' : 'text-gray-600'
+            }`}>Optimize your multi-stop routes.</p>
           </div>
 
           <nav className="flex items-center gap-4">
@@ -53,7 +61,9 @@ export default function Footer(): React.ReactElement {
           </div>
         </div>
 
-        <div className="mt-8 border-t border-gray-800 pt-6 text-center text-sm text-gray-500">
+        <div className={`mt-8 border-t pt-6 text-center text-sm ${
+          darkMode ? 'border-gray-700 text-gray-300' : 'border-gray-800 text-gray-600'
+        }`}>
           © {year} BetterMaps. All rights reserved.
         </div>
       </div>
