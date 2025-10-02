@@ -24,39 +24,39 @@ const HomePage: React.FC = () => {
       </div>
 
       {/* How it Works */}
-      <div className="bg-white rounded-lg p-8 shadow-md">
-        <h2 className="text-3xl font-bold text-center mb-8">How It Works</h2>
-        <div className="grid md:grid-cols-4 gap-6">
-          <div className="text-center">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 shadow-sm">
+        <h2 className="text-3xl font-bold text-gray-800 text-center mb-8">How It Works</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="text-center bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition duration-300">
             <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl font-bold text-blue-600">1</span>
             </div>
-            <h4 className="font-semibold mb-2">Add Locations</h4>
-            <p className="text-sm text-gray-600">Enter your start point and multiple stops</p>
+            <h4 className="font-medium text-gray-900 mb-2">Add Locations</h4>
+            <p className="text-sm text-gray-700 leading-relaxed">Enter your start point and multiple stops</p>
           </div>
 
-          <div className="text-center">
+          <div className="text-center bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition duration-300">
             <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl font-bold text-blue-600">2</span>
             </div>
-            <h4 className="font-semibold mb-2">Calculate Distances</h4>
-            <p className="text-sm text-gray-600">Get real-time distance matrix between all points</p>
+            <h4 className="font-medium text-gray-900 mb-2">Calculate Distances</h4>
+            <p className="text-sm text-gray-700 leading-relaxed">Get real-time distance matrix between all points</p>
           </div>
 
-          <div className="text-center">
+          <div className="text-center bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition duration-300">
             <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl font-bold text-blue-600">3</span>
             </div>
-            <h4 className="font-semibold mb-2">Optimize Route</h4>
-            <p className="text-sm text-gray-600">AI finds the most efficient visiting order</p>
+            <h4 className="font-medium text-gray-900 mb-2">Optimize Route</h4>
+            <p className="text-sm text-gray-700 leading-relaxed">AI finds the most efficient visiting order</p>
           </div>
 
-          <div className="text-center">
+          <div className="text-center bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition duration-300">
             <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl font-bold text-blue-600">4</span>
             </div>
-            <h4 className="font-semibold mb-2">Export & Navigate</h4>
-            <p className="text-sm text-gray-600">Send to Google Maps for turn-by-turn directions</p>
+            <h4 className="font-medium text-gray-900 mb-2">Export & Navigate</h4>
+            <p className="text-sm text-gray-700 leading-relaxed">Send to Google Maps for turn-by-turn directions</p>
           </div>
         </div>
       </div>
