@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import AnimatedHero from '../components/AnimatedHero';
+import { ChartBarIcon, CpuChipIcon, MapPinIcon } from '@heroicons/react/24/outline';
 
 const HomePage: React.FC = () => {
   return (
@@ -9,17 +10,20 @@ const HomePage: React.FC = () => {
 
       {/* Condensed Features */}
       <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16">
-        <div className="overlay-panel">
-          <h3 className="text-lg font-semibold mb-2">Distance Overview</h3>
-          <p className="text-gray-600 text-sm">Quickly inspect distances and ETAs between multiple stops.</p>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md transform hover:scale-105 transition duration-300">
+          <ChartBarIcon className="w-6 h-6 text-indigo-500 mb-3" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Distance Overview</h3>
+          <p className="text-sm text-gray-600 leading-relaxed">Quickly inspect distances and ETAs between multiple stops.</p>
         </div>
-        <div className="overlay-panel">
-          <h3 className="text-lg font-semibold mb-2">TSP Optimization</h3>
-          <p className="text-gray-600 text-sm">Solve multi-stop routes efficiently using OR-Tools.</p>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md transform hover:scale-105 transition duration-300">
+          <CpuChipIcon className="w-6 h-6 text-indigo-500 mb-3" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">TSP Optimization</h3>
+          <p className="text-sm text-gray-600 leading-relaxed">Solve multi-stop routes efficiently using OR-Tools.</p>
         </div>
-        <div className="overlay-panel">
-          <h3 className="text-lg font-semibold mb-2">Priority Stops</h3>
-          <p className="text-gray-600 text-sm">Reorder critical locations and respect constraints.</p>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md transform hover:scale-105 transition duration-300">
+          <MapPinIcon className="w-6 h-6 text-indigo-500 mb-3" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Priority Stops</h3>
+          <p className="text-sm text-gray-600 leading-relaxed">Reorder critical locations and respect constraints.</p>
         </div>
       </div>
 
