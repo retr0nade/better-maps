@@ -62,6 +62,7 @@ export default function MapView({
   const mapRef = useRef<any>(null)
   const watchIdRef = useRef<number | null>(null)
   const [ClusterComponent, setClusterComponent] = useState<any>(null)
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -88,17 +89,26 @@ export default function MapView({
   // Geolocation request on mount
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (!('geolocation' in navigator)) return
+    if (!('geolocation' in navigator)) {
+      setToast("We couldn’t detect your location. Search or add manually.")
+      if (mapRef.current?.flyTo) mapRef.current.flyTo(defaultCenter, 5)
+      setTimeout(() => setToast(null), 3000)
+      return
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const ll: LatLngTuple = [pos.coords.latitude, pos.coords.longitude]
         setUserPos(ll)
-        if (mapRef.current && mapRef.current.setView) {
-          mapRef.current.setView(ll, 13)
+        if (mapRef.current?.flyTo) {
+          mapRef.current.flyTo(ll, 14)
+        } else if (mapRef.current?.setView) {
+          mapRef.current.setView(ll, 14)
         }
       },
       () => {
-        // ignore errors
+        setToast("We couldn’t detect your location. Search or add manually.")
+        if (mapRef.current?.flyTo) mapRef.current.flyTo(defaultCenter, 5)
+        setTimeout(() => setToast(null), 3000)
       },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
     )
@@ -160,7 +170,7 @@ export default function MapView({
           {/* User location */}
           {userPos && (
             <Marker position={userPos}>
-              <Popup>You</Popup>
+              <Popup>You are here</Popup>
             </Marker>
           )}
 
@@ -217,6 +227,46 @@ export default function MapView({
           )}
         </MapContainer>
       </div>
+
+      {/* Re-center to user FAB (bottom-right) */}
+      <div className="absolute right-3 bottom-3 z-[401]">
+        <button
+          className="fab fab-secondary"
+          aria-label="Re-center to my location"
+          onClick={() => {
+            if (userPos && mapRef.current?.flyTo) {
+              mapRef.current.flyTo(userPos, 14)
+              return
+            }
+            if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+              setToast("We couldn’t detect your location. Search or add manually.")
+              setTimeout(() => setToast(null), 3000)
+              return
+            }
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const ll: LatLngTuple = [pos.coords.latitude, pos.coords.longitude]
+                setUserPos(ll)
+                if (mapRef.current?.flyTo) mapRef.current.flyTo(ll, 14)
+              },
+              () => {
+                setToast("We couldn’t detect your location. Search or add manually.")
+                setTimeout(() => setToast(null), 3000)
+              },
+              { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+            )
+          }}
+        >
+          🎯
+        </button>
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-6 z-[402]">
+          <div className="overlay-panel px-3 py-2 text-sm">{toast}</div>
+        </div>
+      )}
 
       {/* Follow me toggle overlay */}
       <div className="absolute top-3 right-3">
