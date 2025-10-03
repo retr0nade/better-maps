@@ -58,6 +58,9 @@ export default function MapView({
   onMarkerContextRemove,
   followMeEnabled,
   onToggleFollowMe,
+  onSetAsStart,
+  onAddStopFromMap,
+  centerRequest,
 }: Props): React.ReactElement {
   const defaultCenter: LatLngTuple = initialCenter ?? [20.5937, 78.9629]
   const [mounted, setMounted] = useState(false)
@@ -247,7 +250,7 @@ export default function MapView({
                 <Popup>
                   <div className="text-sm">
                     <div className="font-semibold mb-1">{s.name ?? 'Waypoint'}</div>
-                    <div className="text-xs text-gray-600 mb-2">{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</div>
+                    <div className="text-xs text-muted mb-2">{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</div>
                     <div className="flex gap-2">
                       <button className="btn-secondary" onClick={() => onSetAsStart && onSetAsStart(idx)} aria-label="Set as start">Set as Start</button>
                       <button className="btn-primary" onClick={() => onAddStopFromMap && onAddStopFromMap([s.lat, s.lng], s.name)} aria-label="Add to route">Add to Route</button>
@@ -321,7 +324,7 @@ export default function MapView({
       <div className="absolute left-3 bottom-3 z-[401] flex items-center gap-2">
         <div className="overlay-panel px-2 py-1 text-xs">
           <div className="flex items-center gap-2">
-            <label className="inline-flex items-center gap-1 text-gray-700">
+            <label className="inline-flex items-center gap-1 text-body">
               <input
                 type="radio"
                 name="layerType"
@@ -330,7 +333,7 @@ export default function MapView({
               />
               Default
             </label>
-            <label className="inline-flex items-center gap-1 text-gray-700">
+            <label className="inline-flex items-center gap-1 text-body">
               <input
                 type="radio"
                 name="layerType"

@@ -61,9 +61,7 @@ const HomePage: React.FC<HomePageProps> = ({ darkMode = false }) => {
           ? 'bg-gradient-to-r from-gray-800 to-gray-700'
           : 'bg-gradient-to-r from-blue-50 to-indigo-50'
       }`}>
-        <h2 className={`text-3xl font-bold text-center mb-8 ${
-          darkMode ? 'text-white' : 'text-gray-900'
-        }`}>How It Works</h2>
+        <h2 className={`text-3xl text-heading text-center mb-8`}>How It Works</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className={`text-center rounded-lg p-6 shadow-sm hover:shadow-md transition duration-300 ${
             darkMode ? 'bg-gray-800 border border-gray-600' : 'bg-white'
@@ -73,12 +71,8 @@ const HomePage: React.FC<HomePageProps> = ({ darkMode = false }) => {
             }`}>
               <span className="text-2xl font-bold text-blue-600">1</span>
             </div>
-            <h4 className={`font-medium mb-2 ${
-              darkMode ? 'text-white' : 'text-gray-900'
-            }`}>Add Locations</h4>
-            <p className={`text-sm leading-relaxed ${
-              darkMode ? 'text-gray-200' : 'text-gray-700'
-            }`}>Enter your start point and multiple stops</p>
+            <h4 className={`font-semibold text-heading mb-2`}>Add Locations</h4>
+            <p className={`text-sm leading-relaxed text-body`}>Enter your start point and multiple stops</p>
           </div>
 
           <div className={`text-center rounded-lg p-6 shadow-sm hover:shadow-md transition duration-300 ${
@@ -121,12 +115,8 @@ const HomePage: React.FC<HomePageProps> = ({ darkMode = false }) => {
             }`}>
               <span className="text-2xl font-bold text-blue-600">4</span>
             </div>
-            <h4 className={`font-medium mb-2 ${
-              darkMode ? 'text-white' : 'text-gray-900'
-            }`}>Export & Navigate</h4>
-            <p className={`text-sm leading-relaxed ${
-              darkMode ? 'text-gray-200' : 'text-gray-700'
-            }`}>Send to Google Maps for turn-by-turn directions</p>
+            <h4 className={`font-semibold text-heading mb-2`}>Export & Navigate</h4>
+            <p className={`text-sm leading-relaxed text-body`}>Send to Google Maps for turn-by-turn directions</p>
           </div>
         </div>
       </div>

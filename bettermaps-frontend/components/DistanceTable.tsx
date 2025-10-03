@@ -34,13 +34,13 @@ const DistanceTable: React.FC<DistanceTableProps> = ({
         <table className="min-w-full border-collapse border border-gray-300">
           <thead>
             <tr className="bg-gray-50">
-              <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-700">
+              <th className="border border-gray-300 px-4 py-2 text-left font-medium text-body">
                 From \ To
               </th>
               {locations.map((_, index) => (
                 <th 
                   key={index}
-                  className="border border-gray-300 px-4 py-2 text-center font-medium text-gray-700"
+                  className="border border-gray-300 px-4 py-2 text-center font-medium text-body"
                 >
                   {getLocationName(index)}
                 </th>
@@ -50,7 +50,7 @@ const DistanceTable: React.FC<DistanceTableProps> = ({
           <tbody>
             {distanceMatrix.map((row, fromIndex) => (
               <tr key={fromIndex}>
-                <td className="border border-gray-300 px-4 py-2 font-medium text-gray-700">
+                <td className="border border-gray-300 px-4 py-2 font-medium text-body">
                   {getLocationName(fromIndex)}
                 </td>
                 {row.map((distance, toIndex) => (
@@ -58,8 +58,8 @@ const DistanceTable: React.FC<DistanceTableProps> = ({
                     key={toIndex}
                     className={`border border-gray-300 px-4 py-2 text-center ${
                       fromIndex === toIndex 
-                        ? 'bg-gray-100 text-gray-600' 
-                        : 'text-gray-900'
+                        ? 'bg-gray-100 text-muted' 
+                        : 'text-heading'
                     }`}
                   >
                     {fromIndex === toIndex ? '-' : formatDistance(distance)}
@@ -94,7 +94,7 @@ const DistanceTable: React.FC<DistanceTableProps> = ({
                     <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-2">
                       {orderIndex + 1}
                     </span>
-                    <span className="text-gray-700">
+                    <span className="text-body">
                       {getLocationName(index)}
                     </span>
                   </div>

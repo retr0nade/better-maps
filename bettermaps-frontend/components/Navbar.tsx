@@ -55,9 +55,7 @@ export default function Navbar({ darkMode = false, onToggleDarkMode }: NavbarPro
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md">
               <div className="h-8 w-8 rounded-md bg-blue-600 text-white flex items-center justify-center font-bold">BM</div>
-              <span className={`text-lg font-semibold ${
-                darkMode ? 'text-white' : 'text-gray-900'
-              }`}>BetterMaps</span>
+              <span className={`text-lg font-semibold text-heading`}>BetterMaps</span>
             </Link>
           </div>
 

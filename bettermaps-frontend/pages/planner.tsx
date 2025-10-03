@@ -460,14 +460,14 @@ export default function PlannerPage(): React.ReactElement {
                   {s.display_name}
                 </button>
               ))}
-              <div className="px-3 py-2 text-xs text-gray-400 border-t">
+              <div className="px-3 py-2 text-xs text-muted border-t">
                 Uses Nominatim. See usage policy: <a className="underline" href="https://operations.osmfoundation.org/policies/nominatim/" target="_blank" rel="noreferrer">policy</a>.
               </div>
             </div>
           )}
           {selectedSuggestion && (
             <div className="mt-3 flex justify-between items-center">
-              <span className="text-sm text-gray-600 truncate mr-3">Selected: {selectedSuggestion.display_name}</span>
+              <span className="text-sm text-body truncate mr-3">Selected: {selectedSuggestion.display_name}</span>
               <button onClick={addSelectedAsStop} className="btn-primary" aria-label="Add selected place as stop">Add as stop</button>
             </div>
           )}
@@ -491,7 +491,7 @@ export default function PlannerPage(): React.ReactElement {
 
                 {/* Optimized Order summary */}
                 {optimizedOrder && optimizedOrder.length > 0 && (
-                  <div className="mb-3 text-sm text-gray-700">
+                  <div className="mb-3 text-sm text-body">
                     <div className="font-medium mb-1">Optimized Order</div>
                     <div className="truncate">
                       {optimizedOrder
@@ -517,9 +517,9 @@ export default function PlannerPage(): React.ReactElement {
                                 className="flex items-start justify-between gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm"
                               >
                                 <div className="min-w-0">
-                                  <div className="text-sm font-medium text-gray-900 truncate">{s.name}</div>
-                                  <div className="text-xs text-gray-500 truncate">{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</div>
-                                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-gray-600">
+                                  <div className="text-sm font-medium text-heading truncate">{s.name}</div>
+                                  <div className="text-xs text-muted truncate">{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</div>
+                                  <label className="mt-2 inline-flex items-center gap-2 text-xs text-body">
                                     <input type="checkbox" checked={!!s.isPriority} onChange={() => togglePriority(s.id)} />
                                     Priority stop
                                   </label>
@@ -562,7 +562,7 @@ export default function PlannerPage(): React.ReactElement {
                 <div className="mt-6">
                   <div className="text-sm font-semibold mb-2">Recents</div>
                   {recents.length === 0 ? (
-                    <div className="text-xs text-gray-500">No recent searches.</div>
+                    <div className="text-xs text-muted">No recent searches.</div>
                   ) : (
                     <ul className="space-y-2">
                       {recents.map((r, i) => (
@@ -577,7 +577,7 @@ export default function PlannerPage(): React.ReactElement {
                           >
                             {r.name}
                           </button>
-                          <span className="text-[11px] text-gray-500 ml-2">{r.lat.toFixed(3)}, {r.lng.toFixed(3)}</span>
+                          <span className="text-[11px] text-muted ml-2">{r.lat.toFixed(3)}, {r.lng.toFixed(3)}</span>
                         </li>
                       ))}
                     </ul>
@@ -632,7 +632,7 @@ export default function PlannerPage(): React.ReactElement {
       {pendingClick && (
         <div className="absolute left-4 top-40 z-40">
           <div className="overlay-panel">
-            <div className="text-sm text-gray-700 mb-2">Add stop at {pendingClick[0].toFixed(5)}, {pendingClick[1].toFixed(5)}?</div>
+            <div className="text-sm text-body mb-2">Add stop at {pendingClick[0].toFixed(5)}, {pendingClick[1].toFixed(5)}?</div>
             <div className="flex gap-2">
               <button className="btn-primary" onClick={() => { setShowNameModal(true) }}>Add as Stop</button>
               <button className="btn-secondary" onClick={() => {
@@ -689,7 +689,7 @@ export default function PlannerPage(): React.ReactElement {
         <div className="absolute left-4 bottom-28 z-30 max-w-md">
           <div className="overlay-panel">
             {computeError && <div className="status-warning mb-3">{computeError}</div>}
-            <div className="flex items-center gap-4 text-sm text-gray-700">
+            <div className="flex items-center gap-4 text-sm text-body">
               {typeof totalDistanceM === 'number' && (
                 <span><strong>Distance:</strong> {(totalDistanceM / 1000).toFixed(2)} km</span>
               )}
@@ -735,7 +735,7 @@ export default function PlannerPage(): React.ReactElement {
               <button className="btn-secondary" onClick={() => setShowSavedModal(false)} aria-label="Close saved routes">Close</button>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Save current as</label>
+              <label className="block text-sm font-medium text-heading mb-1">Save current as</label>
               <div className="flex gap-2">
                 <input className="input-field" value={saveName} onChange={(e) => setSaveName(e.target.value)} placeholder="Route name" />
                 <button className="btn-primary" onClick={saveCurrentRoute} aria-label="Save current route">Save</button>
@@ -743,14 +743,14 @@ export default function PlannerPage(): React.ReactElement {
             </div>
             <div className="max-h-64 overflow-auto">
               {savedRoutes.length === 0 ? (
-                <div className="text-sm text-gray-500">No saved routes yet.</div>
+                <div className="text-sm text-muted">No saved routes yet.</div>
               ) : (
                 <ul className="space-y-2">
                   {savedRoutes.map((r) => (
                     <li key={r.id} className="flex items-center justify-between border border-gray-200 rounded p-2">
                       <div>
-                        <div className="text-sm font-medium">{r.name}</div>
-                        <div className="text-xs text-gray-500">{r.stops.length} stops</div>
+                        <div className="text-sm font-medium text-heading">{r.name}</div>
+                        <div className="text-xs text-muted">{r.stops.length} stops</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button className="btn-primary" onClick={() => loadSavedRoute(r.id)} aria-label={`Load route ${r.name}`}>Load</button>

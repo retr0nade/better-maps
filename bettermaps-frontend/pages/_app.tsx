@@ -6,6 +6,13 @@ import '../styles/globals.css'
 import 'leaflet/dist/leaflet.css'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { Inter } from 'next/font/google'
+
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 function AnimatedBackgroundContainer({ children, darkMode }: { children: React.ReactNode; darkMode: boolean }) {
   return (
@@ -45,13 +52,15 @@ export default function App({ Component, pageProps }: AppProps) {
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <AnimatedBackgroundContainer darkMode={darkMode}>
+      <div className={`${inter.variable} antialiased`}>
+        <AnimatedBackgroundContainer darkMode={darkMode}>
         <Navbar darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />
         <div key={router.asPath} className="page-fade">
           <Component {...pageProps} darkMode={darkMode} />
         </div>
         <Footer darkMode={darkMode} />
-      </AnimatedBackgroundContainer>
+        </AnimatedBackgroundContainer>
+      </div>
     </>
   )
 }

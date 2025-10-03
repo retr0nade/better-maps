@@ -36,14 +36,10 @@ export default function AnimatedHero({ darkMode = false }: AnimatedHeroProps): J
     <section className="relative overflow-hidden py-16 md:py-24">
       <div className="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
         <div>
-          <h1 className={`text-4xl md:text-5xl font-extrabold tracking-tight mb-4 ${
-            darkMode ? 'text-white' : 'text-gray-900'
-          }`}>
+          <h1 className={`text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-heading`}>
             BetterMaps — Optimize Your Multi-Stop Routes
           </h1>
-          <p className={`text-lg md:text-xl mb-8 max-w-xl ${
-            darkMode ? 'text-gray-200' : 'text-gray-700'
-          }`}>
+          <p className={`text-lg md:text-xl mb-8 max-w-xl text-body`}>
             Plan, analyze, and optimize complex routes with ease. Visualize distances, prioritize stops, and export to navigation.
           </p>
           <div className="flex flex-wrap gap-3">

@@ -30,9 +30,7 @@ export default function Footer({ darkMode = false }: FooterProps): React.ReactEl
               <div className="h-7 w-7 rounded-md bg-blue-600 text-white flex items-center justify-center text-sm font-bold">BM</div>
               <span className="text-white font-semibold">BetterMaps</span>
             </div>
-            <p className={`text-sm ${
-              darkMode ? 'text-gray-200' : 'text-gray-600'
-            }`}>Optimize your multi-stop routes.</p>
+            <p className={`text-sm text-body`}>Optimize your multi-stop routes.</p>
           </div>
 
           <nav className="flex items-center gap-4">
@@ -62,7 +60,7 @@ export default function Footer({ darkMode = false }: FooterProps): React.ReactEl
         </div>
 
         <div className={`mt-8 border-t pt-6 text-center text-sm ${
-          darkMode ? 'border-gray-700 text-gray-300' : 'border-gray-800 text-gray-600'
+          darkMode ? 'border-gray-700 text-gray-300' : 'border-gray-800 text-muted'
         }`}>
           © {year} BetterMaps. All rights reserved.
         </div>
