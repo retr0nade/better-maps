@@ -11,6 +11,8 @@ const Polyline = dynamic(async () => (await import('react-leaflet')).Polyline, {
 const useMap = (await import('react-leaflet')).useMap as unknown as () => any // will be used inside child component only
 const useMapEvents = (await import('react-leaflet')).useMapEvents as unknown as (events: any) => any
 const SearchBox = dynamic(async () => (await import('./SearchBox')).default, { ssr: false }) as any
+import { fetchNearbyPOIs, getPoiNameAndCategory } from '../lib/overpass'
+import { reverseGeocode } from '../lib/geocode'
 
 export type LatLngTuple = [number, number]
 
@@ -73,6 +75,7 @@ export default function MapView({
   const [toast, setToast] = useState<string | null>(null)
   const [layerType, setLayerType] = useState<'default' | 'satellite'>('default')
   const [selectedPlace, setSelectedPlace] = useState<{ lat: number; lng: number; name: string } | null>(null)
+  const [clickPopup, setClickPopup] = useState<{ lat: number; lng: number; items: Array<{ name: string; subtitle: string; lat: number; lng: number }> } | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -208,7 +211,36 @@ export default function MapView({
           </LayersControl>
 
           {/* Map events for click + center change */}
-          <MapEvents onClick={(ll) => onMapClick && onMapClick(ll)} onCenterChange={(c) => onCenterChange && onCenterChange(c)} />
+          <MapEvents
+            onClick={async (ll) => {
+              const [lat, lng] = ll
+              try {
+                // Query nearby POIs first
+                const elements = await fetchNearbyPOIs(lat, lng, 250)
+                if (elements.length > 0) {
+                  const items = elements.slice(0, 6).map((el) => {
+                    const { name, category } = getPoiNameAndCategory(el.tags)
+                    const elLat = el.lat ?? el.center?.lat ?? lat
+                    const elLng = el.lon ?? el.center?.lon ?? lng
+                    return { name, subtitle: String(category), lat: elLat, lng: elLng }
+                  })
+                  setClickPopup({ lat, lng, items })
+                } else {
+                  // Fallback to reverse geocode
+                  const rev = await reverseGeocode(lat, lng)
+                  if (rev) {
+                    setClickPopup({ lat, lng, items: [{ name: rev.display_name, subtitle: 'address', lat, lng }] })
+                  } else {
+                    setClickPopup({ lat, lng, items: [] })
+                  }
+                }
+              } catch {
+                setClickPopup({ lat, lng, items: [] })
+              }
+              if (onMapClick) onMapClick(ll)
+            }}
+            onCenterChange={(c) => onCenterChange && onCenterChange(c)}
+          />
 
           {/* User location */}
           {userPos && (
@@ -227,6 +259,52 @@ export default function MapView({
                     <button className="btn-primary" onClick={() => onAddStopFromMap([selectedPlace.lat, selectedPlace.lng], selectedPlace.name)} aria-label="Add selected place as stop">
                       Add as stop
                     </button>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
+          {/* Click popup showing nearby POIs or reverse geocoded address */}
+          {clickPopup && (
+            <Marker position={[clickPopup.lat, clickPopup.lng]}>
+              <Popup>
+                <div className="min-w-[240px] max-w-[280px]">
+                  {clickPopup.items.length > 0 ? (
+                    <div className="space-y-2">
+                      {clickPopup.items.map((it, idx) => (
+                        <div key={`${it.lat}-${it.lng}-${idx}`} className="overlay-panel p-3 text-sm">
+                          <div className="font-semibold text-heading mb-0.5 truncate">{it.name}</div>
+                          <div className="text-xs text-muted mb-2 truncate">{it.subtitle}</div>
+                          <div className="flex gap-2">
+                            {onAddStopFromMap && (
+                              <button
+                                className="btn-primary"
+                                onClick={() => onAddStopFromMap([it.lat, it.lng], it.name)}
+                                aria-label="Add POI as route stop"
+                              >
+                                Add to route
+                              </button>
+                            )}
+                            <button
+                              className="btn-secondary"
+                              onClick={() => {
+                                setSelectedPlace({ lat: it.lat, lng: it.lng, name: it.name })
+                                if (mapRef.current?.flyTo) mapRef.current.flyTo([it.lat, it.lng], 16, { animate: true })
+                              }}
+                              aria-label="Center map here"
+                            >
+                              Center here
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="overlay-panel p-3 text-sm">
+                      <div className="font-semibold text-heading mb-0.5 truncate">No nearby places</div>
+                      <div className="text-xs text-muted">Try another location.</div>
+                    </div>
                   )}
                 </div>
               </Popup>
