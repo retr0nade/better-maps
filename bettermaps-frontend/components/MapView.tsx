@@ -13,6 +13,7 @@ const useMapEvents = (await import('react-leaflet')).useMapEvents as unknown as 
 const SearchBox = dynamic(async () => (await import('./SearchBox')).default, { ssr: false }) as any
 import { fetchNearbyPOIs, getPoiNameAndCategory } from '../lib/overpass'
 import { reverseGeocode } from '../lib/geocode'
+import { GlobeAltIcon, CrosshairIcon } from '@heroicons/react/24/outline'
 
 export type LatLngTuple = [number, number]
 
@@ -76,6 +77,7 @@ export default function MapView({
   const [layerType, setLayerType] = useState<'default' | 'satellite'>('default')
   const [selectedPlace, setSelectedPlace] = useState<{ lat: number; lng: number; name: string } | null>(null)
   const [clickPopup, setClickPopup] = useState<{ lat: number; lng: number; items: Array<{ name: string; subtitle: string; lat: number; lng: number }> } | null>(null)
+  const [showLocationPrompt, setShowLocationPrompt] = useState(true)
 
   useEffect(() => {
     setMounted(true)
@@ -195,20 +197,17 @@ export default function MapView({
           whenCreated={(map: any) => (mapRef.current = map)}
           className="fullmap page-fade"
         >
-          <LayersControl position="topright">
-            <LayersControl.BaseLayer name="Default" checked={layerType === 'default'}>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-              />
-            </LayersControl.BaseLayer>
-            <LayersControl.BaseLayer name="Satellite" checked={layerType === 'satellite'}>
-              <TileLayer
-                attribution='Tiles &copy; Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              />
-            </LayersControl.BaseLayer>
-          </LayersControl>
+          {layerType === 'default' ? (
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            />
+          ) : (
+            <TileLayer
+              attribution='Tiles &copy; Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            />
+          )}
 
           {/* Map events for click + center change */}
           <MapEvents
@@ -373,8 +372,8 @@ export default function MapView({
         </MapContainer>
       </div>
 
-      {/* Re-center to user FAB (bottom-right) */}
-      <div className="absolute right-3 bottom-3 z-[401]">
+      {/* Bottom-right FABs inside the map area */}
+      <div className="absolute right-3 bottom-3 z-[401] flex flex-col gap-2">
         <button
           className="fab fab-secondary"
           aria-label="Re-center to my location"
@@ -402,9 +401,47 @@ export default function MapView({
             )
           }}
         >
-          🎯
+          <CrosshairIcon className="w-6 h-6" />
+        </button>
+        <button
+          className="fab fab-secondary"
+          aria-label="Toggle base layer"
+          onClick={() => setLayerType((t) => (t === 'default' ? 'satellite' : 'default'))}
+        >
+          <GlobeAltIcon className="w-6 h-6" />
         </button>
       </div>
+
+      {/* First-load location permission prompt */}
+      {showLocationPrompt && (
+        <div className="absolute inset-0 z-[402] flex items-start justify-center pt-20 pointer-events-none">
+          <div className="overlay-panel max-w-md w-[92vw] pointer-events-auto">
+            <div className="text-heading text-lg font-semibold mb-1">Use your current location?</div>
+            <div className="text-sm text-body mb-3">We’ll show nearby places and center the map around you.</div>
+            <div className="flex gap-2">
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  if (!('geolocation' in navigator)) { setShowLocationPrompt(false); return }
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      const ll: LatLngTuple = [pos.coords.latitude, pos.coords.longitude]
+                      setUserPos(ll)
+                      if (mapRef.current?.flyTo) mapRef.current.flyTo(ll, 14, { animate: true })
+                      setShowLocationPrompt(false)
+                    },
+                    () => setShowLocationPrompt(false),
+                    { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+                  )
+                }}
+              >
+                Allow
+              </button>
+              <button className="btn-secondary" onClick={() => setShowLocationPrompt(false)}>Not now</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* No custom zoom/layer toggles; using native Leaflet controls styled via globals.css */}
 

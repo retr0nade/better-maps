@@ -569,16 +569,28 @@ export default function PlannerPage(): React.ReactElement {
       {/* Floating Actions (Bottom-right) */}
       <div className="absolute right-4 bottom-4 z-40 flex flex-col items-end gap-2">
         <button
-          className="fab"
-          title="Exclusive: BetterMaps finds the shortest route visiting all stops."
+          className="fab fab-primary"
+          title="Optimize Route"
           aria-label="Optimize Route"
           onClick={computeRoute}
         >
           ✨
         </button>
-        <button className="fab fab-secondary" onClick={addCurrentLocationAsStop} aria-label="Add current location">📍</button>
-        <button className="fab fab-secondary" onClick={toggleFullscreen} aria-label="Fullscreen">⛶</button>
-        <button className="fab fab-secondary" onClick={exportShare} aria-label="Export or Share">↗</button>
+        <button className="fab fab-secondary" onClick={addCurrentLocationAsStop} aria-label="Add current location">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6H6m6 0h6" />
+          </svg>
+        </button>
+        <button className="fab fab-secondary" onClick={toggleFullscreen} aria-label="Fullscreen">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75h6v6m0-6L3.75 9.75m16.5-6h-6v6m0-6l6 6m-6 10.5h6v-6m0 6l-6-6m-10.5 6h6v-6m-6 6l6-6" />
+          </svg>
+        </button>
+        <button className="fab fab-secondary" onClick={exportShare} aria-label="Export or Share">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m0-15l-6 6m6-6l6 6" />
+          </svg>
+        </button>
       </div>
 
       {/* Contextual actions after map click */}

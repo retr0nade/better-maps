@@ -62,25 +62,25 @@ export default function FeedbackPage(): JSX.Element {
   return (
     <main className="container mx-auto px-4 py-10 md:py-16">
       <section className="max-w-2xl mx-auto overlay-panel">
-        <h1 className="text-2xl md:text-3xl font-bold mb-4">We value your feedback</h1>
-        <p className="text-gray-600 mb-6">Tell us what you think about BetterMaps. Your input helps us improve.</p>
+        <h1 className="text-2xl md:text-3xl font-bold mb-4 text-heading">We value your feedback</h1>
+        <p className="text-body mb-6">Tell us what you think about BetterMaps. Your input helps us improve.</p>
 
         {error && <div className="status-error mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name (optional)</label>
+            <label className="block text-sm font-medium text-heading mb-1">Name (optional)</label>
               <input className="input-field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
+            <label className="block text-sm font-medium text-heading mb-1">Email (optional)</label>
               <input className="input-field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+            <label className="block text-sm font-medium text-heading mb-1">Rating</label>
             <div className="flex items-center gap-1" role="radiogroup" aria-label="Rating 1 to 5">
               {[1,2,3,4,5].map((v) => (
                 <button
@@ -99,7 +99,7 @@ export default function FeedbackPage(): JSX.Element {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+            <label className="block text-sm font-medium text-heading mb-1">Message</label>
             <textarea className="input-field" value={message} onChange={(e) => setMessage(e.target.value)} rows={5} placeholder="Share your thoughts..." required />
           </div>
 
@@ -113,16 +113,16 @@ export default function FeedbackPage(): JSX.Element {
 
       {recent.length > 0 && (
         <section className="max-w-3xl mx-auto mt-10">
-          <h2 className="text-xl font-semibold mb-3">Recent feedback</h2>
+          <h2 className="text-xl font-semibold mb-3 text-heading">Recent feedback</h2>
           <div className="grid md:grid-cols-2 gap-3">
             {recent.map((f, i) => (
               <div key={f.id ?? i} className="overlay-panel">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-800">{f.name || 'Anonymous'}</span>
+                  <span className="text-sm font-medium text-heading">{f.name || 'Anonymous'}</span>
                   <span className="text-xs text-yellow-500">{'★'.repeat(Math.max(1, Math.min(5, f.rating || 0)))}</span>
                 </div>
-                <p className="text-sm text-gray-700">{f.message}</p>
-                {f.created_at && <div className="mt-2 text-xs text-gray-500">{new Date(f.created_at).toLocaleString()}</div>}
+                <p className="text-sm text-body">{f.message}</p>
+                {f.created_at && <div className="mt-2 text-xs text-muted">{new Date(f.created_at).toLocaleString()}</div>}
               </div>
             ))}
           </div>
