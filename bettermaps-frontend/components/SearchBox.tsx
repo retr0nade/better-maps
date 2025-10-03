@@ -94,13 +94,13 @@ export default function SearchBox({ onAddStop, onSelectPlace, placeholder = 'Sea
 
   return (
     <div className="absolute top-4 left-4 z-40 w-[min(92vw,520px)]">
-      <div className="bg-white/95 backdrop-blur rounded-full shadow-lg px-4 py-2 flex items-center gap-2 soft-shadow">
+      <div className="bg-white/95 backdrop-blur-sm rounded-full shadow-lg px-4 py-3 flex items-center gap-3 border border-gray-200/50 hover:shadow-xl transition-shadow duration-200">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path d="M21 21l-4.35-4.35" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           <circle cx="10" cy="10" r="7" stroke="#6b7280" strokeWidth="2"/>
         </svg>
         <input
-          className="outline-none w-full text-sm"
+          className="outline-none w-full text-sm text-gray-900 placeholder-gray-500"
           placeholder={placeholder}
           value={query}
           onChange={(e) => {
@@ -137,7 +137,7 @@ export default function SearchBox({ onAddStop, onSelectPlace, placeholder = 'Sea
         <div
           id="searchbox-suggestions"
           ref={listRef}
-          className="mt-2 max-h-72 overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg soft-shadow"
+          className="mt-2 max-h-72 overflow-auto rounded-xl border border-gray-200 bg-white shadow-xl backdrop-blur-sm"
           role="listbox"
         >
           {suggestions.map((s, idx) => {

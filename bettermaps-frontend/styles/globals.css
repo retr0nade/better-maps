@@ -47,10 +47,16 @@
 
 /* Floating action button helpers */
 .fab {
-  @apply fixed z-40 inline-flex items-center justify-center rounded-full shadow-lg transition-transform active:scale-95 w-14 h-14;
+  @apply inline-flex items-center justify-center rounded-full shadow-lg transition-all duration-200 hover:shadow-xl active:scale-95 w-14 h-14;
 }
-.fab-primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
-.fab-secondary { @apply bg-white text-blue-700 ring-1 ring-blue-200 hover:ring-blue-300; }
+.fab-primary { 
+  @apply bg-blue-600 text-white hover:bg-blue-700; 
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+}
+.fab-secondary { 
+  @apply bg-white text-gray-700 ring-1 ring-gray-200 hover:ring-gray-300 hover:bg-gray-50; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
 .fab-br { @apply bottom-6 right-6 w-14 h-14; }
 .fab-bl { @apply bottom-6 left-6 w-14 h-14; }
 

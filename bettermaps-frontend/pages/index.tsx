@@ -20,12 +20,8 @@ const HomePage: React.FC<HomePageProps> = ({ darkMode = false }) => {
             : 'bg-white border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md'
         }`}>
           <ChartBarIcon className="w-6 h-6 text-indigo-500 mb-3" />
-          <h3 className={`text-lg font-semibold mb-2 ${
-            darkMode ? 'text-white' : 'text-gray-900'
-          }`}>Distance Overview</h3>
-          <p className={`text-sm leading-relaxed ${
-            darkMode ? 'text-gray-200' : 'text-gray-600'
-          }`}>Quickly inspect distances and ETAs between multiple stops.</p>
+          <h3 className={`text-lg font-semibold mb-2 text-heading`}>Distance Overview</h3>
+          <p className={`text-sm leading-relaxed text-body`}>Quickly inspect distances and ETAs between multiple stops.</p>
         </div>
         <div className={`rounded-xl shadow-sm p-6 transform hover:scale-105 transition duration-300 ${
           darkMode 
@@ -33,12 +29,8 @@ const HomePage: React.FC<HomePageProps> = ({ darkMode = false }) => {
             : 'bg-white border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md'
         }`}>
           <CpuChipIcon className="w-6 h-6 text-indigo-500 mb-3" />
-          <h3 className={`text-lg font-semibold mb-2 ${
-            darkMode ? 'text-white' : 'text-gray-900'
-          }`}>TSP Optimization</h3>
-          <p className={`text-sm leading-relaxed ${
-            darkMode ? 'text-gray-200' : 'text-gray-600'
-          }`}>Solve multi-stop routes efficiently using OR-Tools.</p>
+          <h3 className={`text-lg font-semibold mb-2 text-heading`}>TSP Optimization</h3>
+          <p className={`text-sm leading-relaxed text-body`}>Solve multi-stop routes efficiently using OR-Tools.</p>
         </div>
         <div className={`rounded-xl shadow-sm p-6 transform hover:scale-105 transition duration-300 ${
           darkMode 
@@ -46,12 +38,8 @@ const HomePage: React.FC<HomePageProps> = ({ darkMode = false }) => {
             : 'bg-white border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 hover:shadow-md'
         }`}>
           <MapPinIcon className="w-6 h-6 text-indigo-500 mb-3" />
-          <h3 className={`text-lg font-semibold mb-2 ${
-            darkMode ? 'text-white' : 'text-gray-900'
-          }`}>Priority Stops</h3>
-          <p className={`text-sm leading-relaxed ${
-            darkMode ? 'text-gray-200' : 'text-gray-600'
-          }`}>Reorder critical locations and respect constraints.</p>
+          <h3 className={`text-lg font-semibold mb-2 text-heading`}>Priority Stops</h3>
+          <p className={`text-sm leading-relaxed text-body`}>Reorder critical locations and respect constraints.</p>
         </div>
       </div>
 
@@ -83,12 +71,8 @@ const HomePage: React.FC<HomePageProps> = ({ darkMode = false }) => {
             }`}>
               <span className="text-2xl font-bold text-blue-600">2</span>
             </div>
-            <h4 className={`font-medium mb-2 ${
-              darkMode ? 'text-white' : 'text-gray-900'
-            }`}>Calculate Distances</h4>
-            <p className={`text-sm leading-relaxed ${
-              darkMode ? 'text-gray-200' : 'text-gray-700'
-            }`}>Get real-time distance matrix between all points</p>
+            <h4 className={`font-semibold text-heading mb-2`}>Calculate Distances</h4>
+            <p className={`text-sm leading-relaxed text-body`}>Get real-time distance matrix between all points</p>
           </div>
 
           <div className={`text-center rounded-lg p-6 shadow-sm hover:shadow-md transition duration-300 ${
@@ -99,12 +83,8 @@ const HomePage: React.FC<HomePageProps> = ({ darkMode = false }) => {
             }`}>
               <span className="text-2xl font-bold text-blue-600">3</span>
             </div>
-            <h4 className={`font-medium mb-2 ${
-              darkMode ? 'text-white' : 'text-gray-900'
-            }`}>Optimize Route</h4>
-            <p className={`text-sm leading-relaxed ${
-              darkMode ? 'text-gray-200' : 'text-gray-700'
-            }`}>AI finds the most efficient visiting order</p>
+            <h4 className={`font-semibold text-heading mb-2`}>Optimize Route</h4>
+            <p className={`text-sm leading-relaxed text-body`}>AI finds the most efficient visiting order</p>
           </div>
 
           <div className={`text-center rounded-lg p-6 shadow-sm hover:shadow-md transition duration-300 ${

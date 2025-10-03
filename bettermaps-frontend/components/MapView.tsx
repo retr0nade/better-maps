@@ -101,32 +101,29 @@ export default function MapView({
     }
   }, [])
 
-  // Geolocation request on mount
+  // Geolocation request on mount - only if user hasn't denied permission
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!('geolocation' in navigator)) {
-      setToast("We couldn’t detect your location. Search or add manually.")
+      setShowLocationPrompt(false)
       if (mapRef.current?.flyTo) mapRef.current.flyTo(defaultCenter, 5, { animate: true })
-      setTimeout(() => setToast(null), 3000)
       return
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const ll: LatLngTuple = [pos.coords.latitude, pos.coords.longitude]
-        setUserPos(ll)
-        if (mapRef.current?.flyTo) {
-          mapRef.current.flyTo(ll, 14, { animate: true })
-        } else if (mapRef.current?.setView) {
-          mapRef.current.setView(ll, 14, { animate: true })
+    
+    // Check if permission was previously denied
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        if (result.state === 'denied') {
+          setShowLocationPrompt(false)
+          if (mapRef.current?.flyTo) mapRef.current.flyTo(defaultCenter, 5, { animate: true })
         }
-      },
-      () => {
-        setToast("We couldn’t detect your location. Search or add manually.")
-        if (mapRef.current?.flyTo) mapRef.current.flyTo(defaultCenter, 5, { animate: true })
-        setTimeout(() => setToast(null), 3000)
-      },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
-    )
+      }).catch(() => {
+        // Fallback if permissions API not supported
+        setShowLocationPrompt(true)
+      })
+    } else {
+      setShowLocationPrompt(true)
+    }
   }, [])
 
   // Follow-me toggle handling (watchPosition)
