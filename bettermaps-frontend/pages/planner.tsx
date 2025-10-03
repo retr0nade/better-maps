@@ -171,6 +171,30 @@ export default function PlannerPage(): React.ReactElement {
     setTotalDurationS(null)
     if (stops.length < 2) return
 
+    // Direct routing fallback for exactly 2 stops
+    if (stops.length === 2) {
+      try {
+        const a = stops[0]
+        const b = stops[1]
+        const coords = `${a.lng},${a.lat};${b.lng},${b.lat}`
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=false`
+        const osrmRes = await fetch(osrmUrl)
+        if (!osrmRes.ok) throw new Error('OSRM request failed')
+        const osrm = await osrmRes.json()
+        const route = osrm?.routes?.[0]
+        if (route?.geometry?.coordinates) {
+          const latlngs: [number, number][] = route.geometry.coordinates.map((c: [number, number]) => [c[1], c[0]])
+          setRoutePolyline(latlngs)
+        }
+        if (typeof route?.duration === 'number') setTotalDurationS(route.duration)
+        if (typeof route?.distance === 'number') setTotalDistanceM(route.distance)
+        setOptimizedOrder([0, 1])
+      } catch (e) {
+        setComputeError('Could not compute route between the two stops. Please try again later.')
+      }
+      return
+    }
+
     // 1) Collect current order as locations (treat first as start for now)
     const locations = stops.map((s) => ({ lat: s.lat, lng: s.lng }))
 
@@ -464,6 +488,21 @@ export default function PlannerPage(): React.ReactElement {
             {drawerOpen && (
               <div>
                 <h2 className="text-lg font-semibold mb-3">Stops</h2>
+
+                {/* Optimized Order summary */}
+                {optimizedOrder && optimizedOrder.length > 0 && (
+                  <div className="mb-3 text-sm text-gray-700">
+                    <div className="font-medium mb-1">Optimized Order</div>
+                    <div className="truncate">
+                      {optimizedOrder
+                        .map((idx, i) => {
+                          const nm = stops[idx]?.name ?? `${stops[idx]?.lat?.toFixed?.(2)}, ${stops[idx]?.lng?.toFixed?.(2)}`
+                          return `${i + 1}. ${nm}`
+                        })
+                        .join(' \u2192 ')}
+                    </div>
+                  </div>
+                )}
                 <DragDropContext onDragEnd={onDragEnd}>
                   <Droppable droppableId="stops">
                     {(provided) => (
@@ -576,10 +615,17 @@ export default function PlannerPage(): React.ReactElement {
 
       {/* Floating Actions (Bottom-right) */}
       <div className="absolute right-4 bottom-4 z-40 flex flex-col items-end gap-2">
+        <button
+          className="fab"
+          title="Exclusive: BetterMaps finds the shortest route visiting all stops."
+          aria-label="Optimize Route"
+          onClick={computeRoute}
+        >
+          ✨
+        </button>
         <button className="fab fab-secondary" onClick={addCurrentLocationAsStop} aria-label="Add current location">📍</button>
         <button className="fab fab-secondary" onClick={toggleFullscreen} aria-label="Fullscreen">⛶</button>
         <button className="fab fab-secondary" onClick={exportShare} aria-label="Export or Share">↗</button>
-        <button className="fab" onClick={computeRoute} aria-label="Compute Route">▶</button>
       </div>
 
       {/* Contextual actions after map click */}
