@@ -95,7 +95,7 @@ export default function MapView({
     if (typeof window === 'undefined') return
     if (!('geolocation' in navigator)) {
       setToast("We couldn’t detect your location. Search or add manually.")
-      if (mapRef.current?.flyTo) mapRef.current.flyTo(defaultCenter, 5)
+      if (mapRef.current?.flyTo) mapRef.current.flyTo(defaultCenter, 5, { animate: true })
       setTimeout(() => setToast(null), 3000)
       return
     }
@@ -104,14 +104,14 @@ export default function MapView({
         const ll: LatLngTuple = [pos.coords.latitude, pos.coords.longitude]
         setUserPos(ll)
         if (mapRef.current?.flyTo) {
-          mapRef.current.flyTo(ll, 14)
+          mapRef.current.flyTo(ll, 14, { animate: true })
         } else if (mapRef.current?.setView) {
-          mapRef.current.setView(ll, 14)
+          mapRef.current.setView(ll, 14, { animate: true })
         }
       },
       () => {
         setToast("We couldn’t detect your location. Search or add manually.")
-        if (mapRef.current?.flyTo) mapRef.current.flyTo(defaultCenter, 5)
+        if (mapRef.current?.flyTo) mapRef.current.flyTo(defaultCenter, 5, { animate: true })
         setTimeout(() => setToast(null), 3000)
       },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
@@ -147,8 +147,8 @@ export default function MapView({
   // Respond to external center requests from parent
   useEffect(() => {
     if (!centerRequest) return
-    if (mapRef.current?.flyTo) mapRef.current.flyTo(centerRequest, 14)
-    else if (mapRef.current?.setView) mapRef.current.setView(centerRequest, 14)
+    if (mapRef.current?.flyTo) mapRef.current.flyTo(centerRequest, 14, { animate: true })
+    else if (mapRef.current?.setView) mapRef.current.setView(centerRequest, 14, { animate: true })
   }, [centerRequest])
 
   const handleMarkerDrag = (index: number, e: any) => {
@@ -156,6 +156,19 @@ export default function MapView({
     const lng = e.target.getLatLng().lng
     if (onMarkerDrag) onMarkerDrag(index, [lat, lng])
   }
+
+  // Prevent page scroll when mouse over the map (wheel events)
+  useEffect(() => {
+    if (!mapRef.current) return
+    const container: HTMLElement | null = mapRef.current.getContainer?.()
+    if (!container) return
+    const onWheel = (e: WheelEvent) => {
+      // Allow the map to handle the wheel, but stop the page from scrolling
+      e.preventDefault()
+    }
+    container.addEventListener('wheel', onWheel, { passive: false })
+    return () => container.removeEventListener('wheel', onWheel as any)
+  }, [mapRef.current])
 
   if (!mounted) return <div className="fullmap page-fade" />
 
@@ -166,7 +179,9 @@ export default function MapView({
         <MapContainer
           center={defaultCenter}
           zoom={5}
-          scrollWheelZoom
+          scrollWheelZoom={true}
+          doubleClickZoom={true}
+          dragging={true}
           zoomControl={false}
           whenCreated={(map: any) => (mapRef.current = map)}
           className="fullmap page-fade"
@@ -258,7 +273,7 @@ export default function MapView({
           aria-label="Re-center to my location"
           onClick={() => {
             if (userPos && mapRef.current?.flyTo) {
-              mapRef.current.flyTo(userPos, 14)
+              mapRef.current.flyTo(userPos, 14, { animate: true })
               return
             }
             if (typeof window === 'undefined' || !('geolocation' in navigator)) {
@@ -270,7 +285,7 @@ export default function MapView({
               (pos) => {
                 const ll: LatLngTuple = [pos.coords.latitude, pos.coords.longitude]
                 setUserPos(ll)
-                if (mapRef.current?.flyTo) mapRef.current.flyTo(ll, 14)
+                if (mapRef.current?.flyTo) mapRef.current.flyTo(ll, 14, { animate: true })
               },
               () => {
                 setToast("We couldn’t detect your location. Search or add manually.")
