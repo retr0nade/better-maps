@@ -354,18 +354,28 @@ export default function PlannerPage(): React.ReactElement {
     }
   }
 
+  const toggleFullscreen = () => {
+    if (typeof document === 'undefined') return
+    const d: any = document
+    const el: any = document.documentElement
+    if (!d.fullscreenElement && el?.requestFullscreen) {
+      el.requestFullscreen().catch(() => {})
+    } else if (d.exitFullscreen) {
+      d.exitFullscreen().catch(() => {})
+    }
+  }
+
   return (
-    <div className={`min-h-screen ${isFullscreen ? '' : 'relative'}`}>
+    <div className="w-full h-screen relative">
       {stops.length > 12 && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50">
           <div className="overlay-panel text-sm">
             You have more than 12 stops. For best performance, split into multiple runs or consider BetterMaps Pro.
           </div>
         </div>
       )}
       {/* Search Bar (Top-left) */}
-      {(!isFullscreen || showSearch) && (
-        <div className={`absolute left-4 ${isFullscreen ? 'top-6' : 'top-20'} z-40 w-[min(92vw,420px)]`}>
+      <div className={`absolute top-4 left-4 z-40 w-[min(92vw,420px)]`}>
           <div className="overlay-panel">
           <input
             value={query}
@@ -419,12 +429,10 @@ export default function PlannerPage(): React.ReactElement {
           )}
           </div>
         </div>
-      )}
 
-      {/* Right Drawer */}
-      {!isFullscreen && (
-        <div className={`fixed z-30 transition-smooth ${drawerOpen ? 'md:top-20 md:right-4 md:w-[420px] bottom-0 left-0 right-0' : 'md:top-20 md:right-4 bottom-20 right-4 w-10'}`}>
-          <div className={`overlay-panel ${drawerOpen ? 'md:rounded-xl rounded-t-2xl' : 'p-0'} relative`}>
+      {/* Left Sidebar (collapsible) */}
+      <div className={`absolute z-30 top-20 left-4 transition-smooth ${drawerOpen ? 'w-[min(92vw,420px)]' : 'w-10'}`}>
+          <div className={`overlay-panel ${drawerOpen ? 'rounded-xl' : 'p-0'} relative`}>
             <button
               aria-label={drawerOpen ? 'Collapse panel' : 'Expand panel'}
               className="absolute -left-3 top-4 h-8 w-8 rounded-full bg-white border border-gray-200 shadow flex items-center justify-center hover:bg-gray-50"
@@ -439,7 +447,7 @@ export default function PlannerPage(): React.ReactElement {
                 <DragDropContext onDragEnd={onDragEnd}>
                   <Droppable droppableId="stops">
                     {(provided) => (
-                      <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                      <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2 max-h-[40vh] overflow-auto pr-1">
                         {stops.map((s, idx) => (
                           <Draggable draggableId={s.id} index={idx} key={s.id}>
                             {(drag) => (
@@ -494,53 +502,38 @@ export default function PlannerPage(): React.ReactElement {
             )}
           </div>
         </div>
-      )}
 
       {/* Map Area */}
-      <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50' : 'container mx-auto px-4'} mt-4`}>
-        <div className="rounded-xl overflow-hidden bg-white shadow">
-          <div className="fullmap">
-            <MapView
-              initialCenter={mapCenter}
-              stops={stops}
-              routePolyline={routePolyline}
-              onMapClick={(ll) => setPendingClick(ll)}
-              onMarkerDrag={(idx, ll) => {
-                setStops((prev) => {
-                  const next = [...prev]
-                  if (next[idx]) {
-                    next[idx] = { ...next[idx], lat: ll[0], lng: ll[1] }
-                  }
-                  void refreshPreviewDistance(next)
-                  return next
-                })
-              }}
-              onMarkerContextRemove={(idx) => {
-                const target = stops[idx]
-                if (target) removeStop(target.id)
-              }}
-            />
-          </div>
-        </div>
+      <div className="w-full h-screen relative">
+        <MapView
+          initialCenter={mapCenter}
+          stops={stops}
+          routePolyline={routePolyline}
+          onMapClick={(ll) => setPendingClick(ll)}
+          onMarkerDrag={(idx, ll) => {
+            setStops((prev) => {
+              const next = [...prev]
+              if (next[idx]) {
+                next[idx] = { ...next[idx], lat: ll[0], lng: ll[1] }
+              }
+              void refreshPreviewDistance(next)
+              return next
+            })
+          }}
+          onMarkerContextRemove={(idx) => {
+            const target = stops[idx]
+            if (target) removeStop(target.id)
+          }}
+        />
       </div>
 
       {/* Floating Actions (Bottom-right) */}
-      {!isFullscreen && (
-        <div className="fab-container">
-          <button className="fab" onClick={computeRoute} aria-label="Compute Route">▶</button>
-          <button className="fab fab-secondary" onClick={() => { setIsFullscreen(true); setShowSearch(false) }} aria-label="Enter Fullscreen">⛶</button>
-          <button className="fab fab-secondary" onClick={exportShare} aria-label="Export or Share">↗</button>
-        </div>
-      )}
-
-      {isFullscreen && (
-        <div className="absolute right-4 bottom-6 z-50 flex items-center gap-2">
-          <button className="overlay-panel px-3 py-2 text-sm" onClick={() => setShowSearch((v) => !v)} aria-label="Toggle search">Search</button>
-          <button className="overlay-panel px-3 py-2 text-sm" onClick={addCurrentLocationAsStop} aria-label="Add current location">+ My Location</button>
-          <button className="overlay-panel px-3 py-2 text-sm" onClick={computeRoute} aria-label="Compute route">Compute</button>
-          <button className="overlay-panel px-3 py-2 text-sm" onClick={() => { setIsFullscreen(false); setShowSearch(true) }} aria-label="Exit fullscreen">Exit</button>
-        </div>
-      )}
+      <div className="absolute right-4 bottom-4 z-40 flex flex-col items-end gap-2">
+        <button className="fab fab-secondary" onClick={addCurrentLocationAsStop} aria-label="Add current location">📍</button>
+        <button className="fab fab-secondary" onClick={toggleFullscreen} aria-label="Fullscreen">⛶</button>
+        <button className="fab fab-secondary" onClick={exportShare} aria-label="Export or Share">↗</button>
+        <button className="fab" onClick={computeRoute} aria-label="Compute Route">▶</button>
+      </div>
 
       {/* Contextual actions after map click */}
       {pendingClick && (
