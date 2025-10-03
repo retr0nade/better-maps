@@ -45,7 +45,7 @@ export default function Navbar({ darkMode = false, onToggleDarkMode }: NavbarPro
   )
 
   return (
-    <nav className={`sticky top-0 z-30 backdrop-blur border-b transition-colors ${
+    <nav className={`sticky top-0 z-30 backdrop-blur border-b transition-colors flex items-center justify-between ${
       darkMode 
         ? 'bg-gray-800/80 border-gray-700' 
         : 'bg-white/80 border-gray-100'
@@ -61,8 +61,14 @@ export default function Navbar({ darkMode = false, onToggleDarkMode }: NavbarPro
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center space-x-6">
             <NavLinks />
+            <button
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-white shadow hover:shadow-md"
+              aria-label="Open profile and settings"
+            >
+              <UserCircleIcon className="w-5 h-5 text-gray-600" />
+            </button>
             {onToggleDarkMode && (
               <button
                 onClick={onToggleDarkMode}
@@ -136,15 +142,7 @@ export default function Navbar({ darkMode = false, onToggleDarkMode }: NavbarPro
         </div>
       </Transition>
 
-      {/* Profile FAB (bottom-left) */}
-      <Link
-        href="#"
-        aria-label="Open profile and settings"
-        className="fab fab-secondary left-6 bottom-6"
-        style={{ position: 'fixed' }}
-      >
-        <UserCircleIcon className="h-6 w-6" />
-      </Link>
+      
     </nav>
   )
 }
