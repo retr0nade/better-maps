@@ -16,11 +16,11 @@ type NominatimSuggestion = {
 type Props = {
   onAddStop?: (lat: number, lng: number, name: string) => void
   onSelectPlace?: (lat: number, lng: number, name: string) => void
+  onCenterMap?: (lat: number, lng: number) => void
   placeholder?: string
 }
 
-export default function SearchBox({ onAddStop, onSelectPlace, placeholder = 'Search places...' }: Props): React.ReactElement {
-  const map = (useMap as any)?.() ?? null
+export default function SearchBox({ onAddStop, onSelectPlace, onCenterMap, placeholder = 'Search places...' }: Props): React.ReactElement {
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<NominatimSuggestion[]>([])
   const [activeIndex, setActiveIndex] = useState<number>(-1)
@@ -37,19 +37,8 @@ export default function SearchBox({ onAddStop, onSelectPlace, placeholder = 'Sea
           return
         }
         try {
-          // Bias search to current map view bounds if available
-          let boundsQuery = ''
-          try {
-            if (map && map.getBounds) {
-              const b = map.getBounds()
-              const south = b.getSouth()
-              const west = b.getWest()
-              const north = b.getNorth()
-              const east = b.getEast()
-              boundsQuery = `&viewbox=${west},${north},${east},${south}&bounded=1`
-            }
-          } catch {}
-          const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&q=${encodeURIComponent(q)}&limit=8${boundsQuery}`
+          // Search without map bounds for now (can be enhanced later)
+          const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&q=${encodeURIComponent(q)}&limit=8`
           const res = await fetch(url, { headers: { 'Accept': 'application/json' } })
           if (!res.ok) {
             setSuggestions([])
@@ -75,8 +64,10 @@ export default function SearchBox({ onAddStop, onSelectPlace, placeholder = 'Sea
   const selectSuggestion = (s: NominatimSuggestion) => {
     const lat = parseFloat(s.lat)
     const lng = parseFloat(s.lon)
-    if (map?.flyTo) map.flyTo([lat, lng], 14)
-    else if (map?.setView) map.setView([lat, lng], 14)
+    
+    // Center map if callback is provided
+    if (onCenterMap) onCenterMap(lat, lng)
+    
     if (onSelectPlace) onSelectPlace(lat, lng, s.display_name)
     if (onAddStop) onAddStop(lat, lng, s.display_name)
     setQuery(s.display_name)

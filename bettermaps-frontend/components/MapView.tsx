@@ -13,7 +13,8 @@ const useMapEvents = (await import('react-leaflet')).useMapEvents as unknown as 
 const SearchBox = dynamic(async () => (await import('./SearchBox')).default, { ssr: false }) as any
 import { fetchNearbyPOIs, getPoiNameAndCategory } from '../lib/overpass'
 import { reverseGeocode } from '../lib/geocode'
-import { GlobeAltIcon, CrosshairIcon } from '@heroicons/react/24/outline'
+import { GlobeAltIcon, MapPinIcon } from '@heroicons/react/24/outline'
+import { setupLeafletIcons } from '../lib/leaflet-setup'
 
 export type LatLngTuple = [number, number]
 
@@ -81,6 +82,8 @@ export default function MapView({
 
   useEffect(() => {
     setMounted(true)
+    // Ensure Leaflet icons are set up on client side
+    setupLeafletIcons()
   }, [])
 
   // Attempt to load clustering at runtime without forcing a build-time dependency
@@ -380,7 +383,7 @@ export default function MapView({
               return
             }
             if (typeof window === 'undefined' || !('geolocation' in navigator)) {
-              setToast("We couldn’t detect your location. Search or add manually.")
+              setToast("We couldn't detect your location. Search or add manually.")
               setTimeout(() => setToast(null), 3000)
               return
             }
@@ -391,14 +394,14 @@ export default function MapView({
                 if (mapRef.current?.flyTo) mapRef.current.flyTo(ll, 14, { animate: true })
               },
               () => {
-                setToast("We couldn’t detect your location. Search or add manually.")
+                setToast("We couldn't detect your location. Search or add manually.")
                 setTimeout(() => setToast(null), 3000)
               },
               { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
             )
           }}
         >
-          <CrosshairIcon className="w-6 h-6" />
+          <MapPinIcon className="w-6 h-6" />
         </button>
         <button
           className="fab fab-secondary"
@@ -446,6 +449,10 @@ export default function MapView({
       <SearchBox
         onAddStop={(lat: number, lng: number, name: string) => onAddStopFromMap && onAddStopFromMap([lat, lng], name)}
         onSelectPlace={(lat: number, lng: number, name: string) => setSelectedPlace({ lat, lng, name })}
+        onCenterMap={(lat: number, lng: number) => {
+          if (mapRef.current?.flyTo) mapRef.current.flyTo([lat, lng], 14, { animate: true })
+          else if (mapRef.current?.setView) mapRef.current.setView([lat, lng], 14, { animate: true })
+        }}
       />
 
       {/* Toast */}
