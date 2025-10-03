@@ -15,10 +15,11 @@ type NominatimSuggestion = {
 
 type Props = {
   onAddStop?: (lat: number, lng: number, name: string) => void
+  onSelectPlace?: (lat: number, lng: number, name: string) => void
   placeholder?: string
 }
 
-export default function SearchBox({ onAddStop, placeholder = 'Search places...' }: Props): React.ReactElement {
+export default function SearchBox({ onAddStop, onSelectPlace, placeholder = 'Search places...' }: Props): React.ReactElement {
   const map = (useMap as any)?.() ?? null
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<NominatimSuggestion[]>([])
@@ -36,7 +37,19 @@ export default function SearchBox({ onAddStop, placeholder = 'Search places...' 
           return
         }
         try {
-          const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=8`
+          // Bias search to current map view bounds if available
+          let boundsQuery = ''
+          try {
+            if (map && map.getBounds) {
+              const b = map.getBounds()
+              const south = b.getSouth()
+              const west = b.getWest()
+              const north = b.getNorth()
+              const east = b.getEast()
+              boundsQuery = `&viewbox=${west},${north},${east},${south}&bounded=1`
+            }
+          } catch {}
+          const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&q=${encodeURIComponent(q)}&limit=8${boundsQuery}`
           const res = await fetch(url, { headers: { 'Accept': 'application/json' } })
           if (!res.ok) {
             setSuggestions([])
@@ -64,6 +77,7 @@ export default function SearchBox({ onAddStop, placeholder = 'Search places...' 
     const lng = parseFloat(s.lon)
     if (map?.flyTo) map.flyTo([lat, lng], 14)
     else if (map?.setView) map.setView([lat, lng], 14)
+    if (onSelectPlace) onSelectPlace(lat, lng, s.display_name)
     if (onAddStop) onAddStop(lat, lng, s.display_name)
     setQuery(s.display_name)
     setSuggestions([])
@@ -71,9 +85,16 @@ export default function SearchBox({ onAddStop, placeholder = 'Search places...' 
     setOpen(false)
   }
 
+  const renderTitleAndAddress = (displayName: string): { title: string; address: string } => {
+    const parts = displayName.split(',')
+    const title = parts.shift()?.trim() ?? displayName
+    const address = parts.join(',').trim()
+    return { title, address }
+  }
+
   return (
-    <div className="absolute top-4 left-4 z-40 w-[min(92vw,420px)]">
-      <div className="bg-white rounded-full shadow px-4 py-2 flex items-center gap-2">
+    <div className="absolute top-4 left-4 z-40 w-[min(92vw,520px)]">
+      <div className="bg-white/95 backdrop-blur rounded-full shadow-lg px-4 py-2 flex items-center gap-2 soft-shadow">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path d="M21 21l-4.35-4.35" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           <circle cx="10" cy="10" r="7" stroke="#6b7280" strokeWidth="2"/>
@@ -116,21 +137,25 @@ export default function SearchBox({ onAddStop, placeholder = 'Search places...' 
         <div
           id="searchbox-suggestions"
           ref={listRef}
-          className="mt-2 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white shadow"
+          className="mt-2 max-h-72 overflow-auto rounded-xl border border-gray-200 bg-white shadow-lg soft-shadow"
           role="listbox"
         >
-          {suggestions.map((s, idx) => (
-            <button
-              key={`${s.lat}-${s.lon}-${idx}`}
-              onClick={() => selectSuggestion(s)}
-              role="option"
-              aria-selected={activeIndex === idx}
-              className={`w-full text-left px-3 py-2 text-sm focus:outline-none ${activeIndex === idx ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-            >
-              {s.display_name}
-            </button>
-          ))}
-          <div className="px-3 py-2 text-xs text-gray-400 border-t">
+          {suggestions.map((s, idx) => {
+            const { title, address } = renderTitleAndAddress(s.display_name)
+            return (
+              <button
+                key={`${s.lat}-${s.lon}-${idx}`}
+                onClick={() => selectSuggestion(s)}
+                role="option"
+                aria-selected={activeIndex === idx}
+                className={`w-full text-left px-3 py-2 focus:outline-none ${activeIndex === idx ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+              >
+                <div className="text-sm text-heading truncate">{title}</div>
+                {address && <div className="text-xs text-muted truncate">{address}</div>}
+              </button>
+            )
+          })}
+          <div className="px-3 py-2 text-xs text-muted border-t">
             Powered by Nominatim. Please respect their <a className="underline" href="https://operations.osmfoundation.org/policies/nominatim/" target="_blank" rel="noreferrer">usage policy</a>.
           </div>
         </div>

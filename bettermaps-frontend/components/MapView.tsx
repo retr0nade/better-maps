@@ -10,6 +10,7 @@ const Popup = dynamic(async () => (await import('react-leaflet')).Popup, { ssr: 
 const Polyline = dynamic(async () => (await import('react-leaflet')).Polyline, { ssr: false }) as any
 const useMap = (await import('react-leaflet')).useMap as unknown as () => any // will be used inside child component only
 const useMapEvents = (await import('react-leaflet')).useMapEvents as unknown as (events: any) => any
+const SearchBox = dynamic(async () => (await import('./SearchBox')).default, { ssr: false }) as any
 
 export type LatLngTuple = [number, number]
 
@@ -71,6 +72,7 @@ export default function MapView({
   const [ClusterComponent, setClusterComponent] = useState<any>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [layerType, setLayerType] = useState<'default' | 'satellite'>('default')
+  const [selectedPlace, setSelectedPlace] = useState<{ lat: number; lng: number; name: string } | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -215,6 +217,22 @@ export default function MapView({
             </Marker>
           )}
 
+          {/* Selected place marker from SearchBox */}
+          {selectedPlace && (
+            <Marker position={[selectedPlace.lat, selectedPlace.lng]}>
+              <Popup>
+                <div className="text-sm">
+                  <div className="font-semibold mb-1">{selectedPlace.name}</div>
+                  {onAddStopFromMap && (
+                    <button className="btn-primary" onClick={() => onAddStopFromMap([selectedPlace.lat, selectedPlace.lng], selectedPlace.name)} aria-label="Add selected place as stop">
+                      Add as stop
+                    </button>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
           {/* Stops markers with optional runtime clustering */}
           {ClusterComponent ? (
             <ClusterComponent chunkedLoading>
@@ -306,6 +324,12 @@ export default function MapView({
       </div>
 
       {/* No custom zoom/layer toggles; using native Leaflet controls styled via globals.css */}
+
+      {/* Search bar overlay */}
+      <SearchBox
+        onAddStop={(lat: number, lng: number, name: string) => onAddStopFromMap && onAddStopFromMap([lat, lng], name)}
+        onSelectPlace={(lat: number, lng: number, name: string) => setSelectedPlace({ lat, lng, name })}
+      />
 
       {/* Toast */}
       {toast && (
