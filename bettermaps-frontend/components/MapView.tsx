@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 // Dynamically import react-leaflet primitives to be SSR-safe
 const MapContainer = dynamic(async () => (await import('react-leaflet')).MapContainer, { ssr: false }) as any
 const TileLayer = dynamic(async () => (await import('react-leaflet')).TileLayer, { ssr: false }) as any
+const LayersControl = dynamic(async () => (await import('react-leaflet')).LayersControl, { ssr: false }) as any
 const Marker = dynamic(async () => (await import('react-leaflet')).Marker, { ssr: false }) as any
 const Popup = dynamic(async () => (await import('react-leaflet')).Popup, { ssr: false }) as any
 const Polyline = dynamic(async () => (await import('react-leaflet')).Polyline, { ssr: false }) as any
@@ -185,22 +186,24 @@ export default function MapView({
           scrollWheelZoom={true}
           doubleClickZoom={true}
           dragging={true}
-          zoomControl={false}
+          zoomControl={true}
           whenCreated={(map: any) => (mapRef.current = map)}
           className="fullmap page-fade"
         >
-          {layerType === 'default' && (
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-          )}
-          {layerType === 'satellite' && (
-            <TileLayer
-              attribution='Tiles &copy; Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            />
-          )}
+          <LayersControl position="topright">
+            <LayersControl.BaseLayer name="Default" checked={layerType === 'default'}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+              />
+            </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer name="Satellite" checked={layerType === 'satellite'}>
+              <TileLayer
+                attribution='Tiles &copy; Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              />
+            </LayersControl.BaseLayer>
+          </LayersControl>
 
           {/* Map events for click + center change */}
           <MapEvents onClick={(ll) => onMapClick && onMapClick(ll)} onCenterChange={(c) => onCenterChange && onCenterChange(c)} />
@@ -302,49 +305,7 @@ export default function MapView({
         </button>
       </div>
 
-      {/* Zoom controls (custom) */}
-      <div className="absolute right-3 top-14 z-[401] flex flex-col gap-2">
-        <button
-          className="overlay-panel px-3 py-1 text-sm"
-          aria-label="Zoom in"
-          onClick={() => mapRef.current && mapRef.current.zoomIn?.()}
-        >
-          +
-        </button>
-        <button
-          className="overlay-panel px-3 py-1 text-sm"
-          aria-label="Zoom out"
-          onClick={() => mapRef.current && mapRef.current.zoomOut?.()}
-        >
-          -
-        </button>
-      </div>
-
-      {/* Layers toggle (bottom-left) */}
-      <div className="absolute left-3 bottom-3 z-[401] flex items-center gap-2">
-        <div className="overlay-panel px-2 py-1 text-xs">
-          <div className="flex items-center gap-2">
-            <label className="inline-flex items-center gap-1 text-body">
-              <input
-                type="radio"
-                name="layerType"
-                checked={layerType === 'default'}
-                onChange={() => setLayerType('default')}
-              />
-              Default
-            </label>
-            <label className="inline-flex items-center gap-1 text-body">
-              <input
-                type="radio"
-                name="layerType"
-                checked={layerType === 'satellite'}
-                onChange={() => setLayerType('satellite')}
-              />
-              Satellite
-            </label>
-          </div>
-        </div>
-      </div>
+      {/* No custom zoom/layer toggles; using native Leaflet controls styled via globals.css */}
 
       {/* Toast */}
       {toast && (
