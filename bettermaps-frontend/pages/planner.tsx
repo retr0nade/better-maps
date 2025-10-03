@@ -37,6 +37,8 @@ export default function PlannerPage(): React.ReactElement {
   const [showSavedModal, setShowSavedModal] = useState(false)
   const [saveName, setSaveName] = useState('')
   const [savedRoutes, setSavedRoutes] = useState<Array<{ id: string; name: string; stops: Stop[] }>>([])
+  const [recents, setRecents] = useState<Array<{ name: string; lat: number; lng: number }>>([])
+  const [centerRequest, setCenterRequest] = useState<[number, number] | null>(null)
 
   const mapCenter = useMemo<[number, number]>(() => [37.773972, -122.431297], [])
   const mapRef = useRef<any>(null)
@@ -94,12 +96,17 @@ export default function PlannerPage(): React.ReactElement {
     setActiveIndex(-1)
     const lat = parseFloat(s.lat)
     const lng = parseFloat(s.lon)
-    if (mapRef.current) {
-      const leaflet = mapRef.current
-      if (leaflet && leaflet.setView) {
-        leaflet.setView([lat, lng], 13)
-      }
-    }
+    setCenterRequest([lat, lng])
+    // Save to recents (max 5, unique by name+coords)
+    try {
+      const key = 'bettermaps_recent_searches'
+      const current = recents ?? []
+      const nextItem = { name: s.display_name, lat, lng }
+      const filtered = current.filter((r) => !(r.name === nextItem.name && r.lat === nextItem.lat && r.lng === nextItem.lng))
+      const next = [nextItem, ...filtered].slice(0, 5)
+      setRecents(next)
+      if (typeof window !== 'undefined') window.localStorage.setItem(key, JSON.stringify(next))
+    } catch {}
   }
 
   const addSelectedAsStop = () => {
@@ -304,6 +311,19 @@ export default function PlannerPage(): React.ReactElement {
     setShowSavedModal(true)
   }
 
+  // Recents helpers
+  const RECENTS_KEY = 'bettermaps_recent_searches'
+  const refreshRecents = () => {
+    if (typeof window === 'undefined') return
+    try {
+      const raw = window.localStorage.getItem(RECENTS_KEY)
+      if (raw) setRecents(JSON.parse(raw))
+      else setRecents([])
+    } catch {
+      setRecents([])
+    }
+  }
+
   const saveCurrentRoute = () => {
     const name = saveName.trim() || `Route ${new Date().toLocaleString()}`
     const newItem = { id: `${Date.now()}`, name, stops }
@@ -498,6 +518,32 @@ export default function PlannerPage(): React.ReactElement {
                   <button className="btn-secondary" onClick={() => setShowSavedModal(true)} aria-label="Open saved routes">Saved routes</button>
                   <button className="btn-primary" onClick={() => setShowSavedModal(true)} aria-label="Save current route">Save</button>
                 </div>
+
+                {/* Recents */}
+                <div className="mt-6">
+                  <div className="text-sm font-semibold mb-2">Recents</div>
+                  {recents.length === 0 ? (
+                    <div className="text-xs text-gray-500">No recent searches.</div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {recents.map((r, i) => (
+                        <li key={`${r.lat}-${r.lng}-${i}`} className="flex items-center justify-between">
+                          <button
+                            className="underline text-left text-sm hover:text-blue-600 truncate"
+                            title={r.name}
+                            onClick={() => {
+                              setQuery(r.name)
+                              setCenterRequest([r.lat, r.lng])
+                            }}
+                          >
+                            {r.name}
+                          </button>
+                          <span className="text-[11px] text-gray-500 ml-2">{r.lat.toFixed(3)}, {r.lng.toFixed(3)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -509,6 +555,7 @@ export default function PlannerPage(): React.ReactElement {
           initialCenter={mapCenter}
           stops={stops}
           routePolyline={routePolyline}
+          centerRequest={centerRequest}
           onMapClick={(ll) => setPendingClick(ll)}
           onMarkerDrag={(idx, ll) => {
             setStops((prev) => {

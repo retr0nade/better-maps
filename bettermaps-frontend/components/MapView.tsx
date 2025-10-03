@@ -29,6 +29,9 @@ type Props = {
   onMarkerContextRemove?: (index: number) => void
   followMeEnabled?: boolean
   onToggleFollowMe?: (enabled: boolean) => void
+  onSetAsStart?: (index: number) => void
+  onAddStopFromMap?: (latlng: LatLngTuple, name?: string) => void
+  centerRequest?: LatLngTuple | null
 }
 
 function MapEvents({ onClick, onCenterChange }: { onClick?: (ll: LatLngTuple) => void; onCenterChange?: (c: LatLngTuple) => void }) {
@@ -63,6 +66,7 @@ export default function MapView({
   const watchIdRef = useRef<number | null>(null)
   const [ClusterComponent, setClusterComponent] = useState<any>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [layerType, setLayerType] = useState<'default' | 'satellite'>('default')
 
   useEffect(() => {
     setMounted(true)
@@ -140,6 +144,13 @@ export default function MapView({
     }
   }, [followMeEnabled])
 
+  // Respond to external center requests from parent
+  useEffect(() => {
+    if (!centerRequest) return
+    if (mapRef.current?.flyTo) mapRef.current.flyTo(centerRequest, 14)
+    else if (mapRef.current?.setView) mapRef.current.setView(centerRequest, 14)
+  }, [centerRequest])
+
   const handleMarkerDrag = (index: number, e: any) => {
     const lat = e.target.getLatLng().lat
     const lng = e.target.getLatLng().lng
@@ -156,13 +167,22 @@ export default function MapView({
           center={defaultCenter}
           zoom={5}
           scrollWheelZoom
+          zoomControl={false}
           whenCreated={(map: any) => (mapRef.current = map)}
           className="fullmap page-fade"
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          {layerType === 'default' && (
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          )}
+          {layerType === 'satellite' && (
+            <TileLayer
+              attribution='Tiles &copy; Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            />
+          )}
 
           {/* Map events for click + center change */}
           <MapEvents onClick={(ll) => onMapClick && onMapClick(ll)} onCenterChange={(c) => onCenterChange && onCenterChange(c)} />
@@ -212,9 +232,12 @@ export default function MapView({
                 <Popup>
                   <div className="text-sm">
                     <div className="font-semibold mb-1">{s.name ?? 'Waypoint'}</div>
-                    <button className="btn-primary" onClick={() => onMarkerContextRemove && onMarkerContextRemove(idx)} aria-label="Remove stop">
-                      Remove stop
-                    </button>
+                    <div className="text-xs text-gray-600 mb-2">{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</div>
+                    <div className="flex gap-2">
+                      <button className="btn-secondary" onClick={() => onSetAsStart && onSetAsStart(idx)} aria-label="Set as start">Set as Start</button>
+                      <button className="btn-primary" onClick={() => onAddStopFromMap && onAddStopFromMap([s.lat, s.lng], s.name)} aria-label="Add to route">Add to Route</button>
+                      <button className="btn-secondary" onClick={() => onMarkerContextRemove && onMarkerContextRemove(idx)} aria-label="Remove stop">Remove</button>
+                    </div>
                   </div>
                 </Popup>
               </Marker>
@@ -259,6 +282,50 @@ export default function MapView({
         >
           🎯
         </button>
+      </div>
+
+      {/* Zoom controls (custom) */}
+      <div className="absolute right-3 top-14 z-[401] flex flex-col gap-2">
+        <button
+          className="overlay-panel px-3 py-1 text-sm"
+          aria-label="Zoom in"
+          onClick={() => mapRef.current && mapRef.current.zoomIn?.()}
+        >
+          +
+        </button>
+        <button
+          className="overlay-panel px-3 py-1 text-sm"
+          aria-label="Zoom out"
+          onClick={() => mapRef.current && mapRef.current.zoomOut?.()}
+        >
+          -
+        </button>
+      </div>
+
+      {/* Layers toggle (bottom-left) */}
+      <div className="absolute left-3 bottom-3 z-[401] flex items-center gap-2">
+        <div className="overlay-panel px-2 py-1 text-xs">
+          <div className="flex items-center gap-2">
+            <label className="inline-flex items-center gap-1 text-gray-700">
+              <input
+                type="radio"
+                name="layerType"
+                checked={layerType === 'default'}
+                onChange={() => setLayerType('default')}
+              />
+              Default
+            </label>
+            <label className="inline-flex items-center gap-1 text-gray-700">
+              <input
+                type="radio"
+                name="layerType"
+                checked={layerType === 'satellite'}
+                onChange={() => setLayerType('satellite')}
+              />
+              Satellite
+            </label>
+          </div>
+        </div>
       </div>
 
       {/* Toast */}
