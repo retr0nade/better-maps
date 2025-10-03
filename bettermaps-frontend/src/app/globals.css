@@ -47,6 +47,56 @@ body {
   z-index: 1;
 }
 
+/* Modernize Leaflet controls (zoom, layers) */
+.leaflet-control {
+  font-family: var(--font-inter), ui-sans-serif, system-ui;
+}
+.leaflet-control-zoom,
+.leaflet-control-layers {
+  background: #ffffff;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.leaflet-control-zoom a,
+.leaflet-control-layers a {
+  color: #111827;
+  font-weight: 500;
+}
+.leaflet-control-zoom a,
+.leaflet-control a {
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  text-align: center;
+  background: transparent;
+  border-bottom: 1px solid rgba(17,24,39,0.06);
+}
+.leaflet-control-zoom a:last-child { border-bottom: 0; }
+.leaflet-control a:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+/* Layers control panel tweaks */
+.leaflet-control-layers-expanded {
+  padding: 8px 10px;
+}
+.leaflet-control-layers-list label {
+  font-size: 12px;
+  color: var(--color-body);
+  font-weight: 500;
+}
+
+/* Attribution small and muted */
+.leaflet-control-attribution {
+  background: rgba(255,255,255,0.85);
+  color: var(--color-muted);
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
 /* Smooth transitions */
 .transition-smooth {
   transition: all 0.3s ease-in-out;
