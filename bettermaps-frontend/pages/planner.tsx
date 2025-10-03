@@ -418,61 +418,7 @@ export default function PlannerPage(): React.ReactElement {
           </div>
         </div>
       )}
-      {/* Search Bar (Top-left) */}
-      <div className={`absolute top-4 left-4 z-40 w-[min(92vw,420px)]`}>
-          <div className="overlay-panel">
-          <input
-            value={query}
-            onChange={onQueryChange}
-            placeholder="Search places..."
-            aria-label="Search places"
-            className="input-field"
-            role="combobox"
-            aria-expanded={suggestions.length > 0}
-            aria-controls="global-suggestions"
-            onKeyDown={(e) => {
-              if (!suggestions.length) return
-              if (e.key === 'ArrowDown') {
-                e.preventDefault()
-                setActiveIndex((i) => (i + 1) % suggestions.length)
-              } else if (e.key === 'ArrowUp') {
-                e.preventDefault()
-                setActiveIndex((i) => (i - 1 + suggestions.length) % suggestions.length)
-              } else if (e.key === 'Enter') {
-                e.preventDefault()
-                if (activeIndex >= 0) handleSelectSuggestion(suggestions[activeIndex])
-              } else if (e.key === 'Escape') {
-                setSuggestions([])
-                setActiveIndex(-1)
-              }
-            }}
-          />
-          {suggestions.length > 0 && (
-            <div id="global-suggestions" className="mt-2 max-h-60 overflow-auto rounded-md border border-gray-200 bg-white shadow" role="listbox">
-              {suggestions.map((s, idx) => (
-                <button
-                  key={`${s.lat}-${s.lon}`}
-                  onClick={() => handleSelectSuggestion(s)}
-                  role="option"
-                  aria-selected={activeIndex === idx}
-                  className={`w-full text-left px-3 py-2 focus:outline-none ${activeIndex === idx ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-                >
-                  {s.display_name}
-                </button>
-              ))}
-              <div className="px-3 py-2 text-xs text-muted border-t">
-                Uses Nominatim. See usage policy: <a className="underline" href="https://operations.osmfoundation.org/policies/nominatim/" target="_blank" rel="noreferrer">policy</a>.
-              </div>
-            </div>
-          )}
-          {selectedSuggestion && (
-            <div className="mt-3 flex justify-between items-center">
-              <span className="text-sm text-body truncate mr-3">Selected: {selectedSuggestion.display_name}</span>
-              <button onClick={addSelectedAsStop} className="btn-primary" aria-label="Add selected place as stop">Add as stop</button>
-            </div>
-          )}
-          </div>
-        </div>
+      {/* Search bar now provided by MapView's SearchBox overlay */}
 
       {/* Left Sidebar (collapsible) */}
       <div className={`absolute z-30 top-20 left-4 transition-smooth ${drawerOpen ? 'w-[min(92vw,420px)]' : 'w-10'}`}>
@@ -596,6 +542,13 @@ export default function PlannerPage(): React.ReactElement {
           routePolyline={routePolyline}
           centerRequest={centerRequest}
           onMapClick={(ll) => setPendingClick(ll)}
+          onAddStopFromMap={(ll, name) => {
+            const stop = { id: `${ll[0]},${ll[1]}-${Date.now()}` , name: name ?? 'New Stop', lat: ll[0], lng: ll[1] }
+            const next = [...stops, stop]
+            setStops(next)
+            setUndoAction({ type: 'add', stop, index: stops.length })
+            void refreshPreviewDistance(next)
+          }}
           onMarkerDrag={(idx, ll) => {
             setStops((prev) => {
               const next = [...prev]

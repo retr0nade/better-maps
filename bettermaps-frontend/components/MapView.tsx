@@ -363,7 +363,12 @@ export default function MapView({
 
           {/* Route polyline */}
           {routePolyline && routePolyline.length > 1 && (
-            <Polyline positions={routePolyline} pathOptions={{ color: '#2563eb', weight: 4, opacity: 0.85 }} />
+            Array.from({ length: routePolyline.length - 1 }).map((_, i) => {
+              const seg = [routePolyline[i], routePolyline[i + 1]] as [LatLngTuple, LatLngTuple]
+              const colors = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#8b5cf6']
+              const color = colors[i % colors.length]
+              return <Polyline key={`seg-${i}`} positions={seg} pathOptions={{ color, weight: 4, opacity: 0.9 }} />
+            })
           )}
         </MapContainer>
       </div>
